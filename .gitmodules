@@ -1,0 +1,3 @@
+[submodule "mo-tndp"]
+	path = mo-tndp
+	url = https://github.com/sias-uva/mo-tndp
