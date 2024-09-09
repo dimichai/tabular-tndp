@@ -85,6 +85,7 @@ class QLearningTNDP:
         return {
             "env_id": self.env_id,
             "od_type": self.env.od_type,
+            "reward_type": "efficiency", # TODO Change to make argument
             "alpha": self.alpha,
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,
@@ -213,8 +214,8 @@ class QLearningTNDP:
                 state = new_state
 
                 if done:
-                    print('segments:', self.env.all_sat_od_pairs)
-                    print('line', self.env.covered_cells_vid)
+                    # print('segments:', self.env.all_sat_od_pairs)
+                    # print('line', self.env.covered_cells_vid)
                     break
             
             if episode_reward > best_episode_reward:
