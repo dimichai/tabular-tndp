@@ -65,10 +65,12 @@ def train(seed, args, config):
         # Launch the agent training
         print(f"Seed {seed}. Training agent...")
         
-        config.decay_steps = int(config.train_episodes * 0.1)
-        config.nr_stations = args.nr_stations
+        config.env_id = args.env_id
         config.od_type = args.od_type
+        config.epsilon_decay_steps = int(config.train_episodes * 0.1)
+        config.nr_stations = args.nr_stations
         config.chained_reward = args.chained_reward
+        config.ignore_existing_lines = args.ignore_existing_lines
             
         agent = QLearningTNDP(
             env,
@@ -76,7 +78,7 @@ def train(seed, args, config):
             gamma=config.gamma,
             initial_epsilon=config.initial_epsilon,
             final_epsilon=config.final_epsilon,
-            epsilon_decay_steps=config.decay_steps,
+            epsilon_decay_steps=config.epsilon_decay_steps,
             train_episodes=config.train_episodes,
             test_episodes=config.test_episodes,
             nr_stations=config.nr_stations,
@@ -84,7 +86,7 @@ def train(seed, args, config):
             wandb_project_name=args.project_name,
         )
             
-        agent.train(args.starting_loc)
+        agent.train(args.reward_type, args.starting_loc)
             
 def main(args, seeds):
     config_file = os.path.join(args.config_path)
@@ -128,6 +130,7 @@ if __name__ == "__main__":
     parser.add_argument('--ignore_existing_lines', action='store_true', default=False)
     parser.add_argument('--od_type', default='pct', type=str, choices=['pct', 'abs'])
     parser.add_argument('--chained_reward', action='store_true', default=False)
+    parser.add_argument('--reward_type', default='max_efficiency', type=str, choices=['max_efficiency'])
     
 
     args = parser.parse_args()

@@ -78,6 +78,7 @@ class QLearningTNDP:
                     project=self.wandb_project_name,
                     id=self.wandb_run_id,
                     resume=True,
+                    config=self.get_config(),
                 )
         
     def get_config(self) -> dict:
@@ -85,7 +86,6 @@ class QLearningTNDP:
         return {
             "env_id": self.env_id,
             "od_type": self.env.od_type,
-            "reward_type": "efficiency", # TODO Change to make argument
             "alpha": self.alpha,
             "gamma": self.gamma,
             "initial_epsilon": self.initial_epsilon,
@@ -144,7 +144,9 @@ class QLearningTNDP:
         wandb.define_metric("*", step_metric="episode")
 
 
-    def train(self, starting_loc=None):
+    def train(self, reward_type, starting_loc=None):
+        wandb.config['reward_type'] = reward_type
+        
         self.Q = np.zeros((self.env.observation_space.n, self.env.action_space.n))
         
         rewards = []
@@ -201,8 +203,11 @@ class QLearningTNDP:
                 new_state, reward, done, _, info = self.env.step(action)
 
                 # Here we sum the reward to create a single-objective policy optimization
-                reward = reward.sum()
-
+                if reward_type == 'max_efficiency':
+                    reward = reward.sum()
+                else:
+                    raise ValueError(f"Reward type {reward_type} not implemented")
+                        
                 # Update Q-Table
                 new_state_gid = self.env.city.grid_to_vector(new_state['location'][None, :]).item()
                 self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state_index, action])
