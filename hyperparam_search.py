@@ -67,7 +67,7 @@ def train(seed, args, config):
         
         config.env_id = args.env_id
         config.od_type = args.od_type
-        config.epsilon_decay_steps = int(config.train_episodes * 0.1)
+        config.epsilon_decay_steps = int(config.train_episodes * 0.9)
         config.nr_stations = args.nr_stations
         config.chained_reward = args.chained_reward
         config.ignore_existing_lines = args.ignore_existing_lines
