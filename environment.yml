@@ -4,6 +4,6 @@ channels:
   - defaults
 dependencies:
   - python=3.12
-  - conda-forge::wandb=0.17.9
+  - conda-forge::wandb
   - conda-forge::matplotlib
 prefix: /Users/dimichai/miniforge3/envs/tabular-tndp
