@@ -132,6 +132,7 @@ if __name__ == "__main__":
     parser.add_argument('--chained_reward', action='store_true', default=False)
     parser.add_argument('--reward_type', default='max_efficiency', type=str, choices=['max_efficiency'])
     
+    Path("./q_tables").mkdir(parents=True, exist_ok=True)
 
     args = parser.parse_args()
     
