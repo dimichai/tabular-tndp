@@ -160,13 +160,6 @@ if __name__ == "__main__":
         args.groups_file = f"price_groups_{args.nr_groups}.txt"
         args.ignore_existing_lines = args.ignore_existing_lines
         args.experiment_name = "Q-Learning-Xian"
-        # args.od_type = 'abs'
-        # args.policy = [5, 5, 5, 6, 6, 6, 6, 6, 4, 6, 4, 4, 6, 6, 6, 6, 6, 6, 4, 4, 4, 6, 4, 6, 6, 6, 6, 4, 4, 6, 6, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 6, 6, 6, 6, 6]
-        # args.policy = [0, 2, 1, 0, 0, 0, 6, 6, 0, 0, 0, 0, 6, 6, 0, 0, 6, 0, 6, 6, 4, 6, 6, 4, 4, 4, 5, 6, 6, 4, 4, 6, 4, 6, 6, 4, 4, 3, 2, 3, 2, 4, 2, 2]
-        # args.policy = [2, 4, 2, 2, 0, 0, 1, 2, 2, 1, 0, 2, 0, 0, 6, 6, 5, 5, 6, 4, 6, 6, 4, 6, 4, 6, 4, 4, 6, 6, 6, 7, 6, 0, 0, 1, 2, 1, 2, 0, 0, 6, 6, 0]
-        # if args.policy is not None:
-        #     args.starting_loc_x = 19
-        #     args.starting_loc_y = 11
 
     if args.starting_loc_x is not None and args.starting_loc_y is not None:
         args.starting_loc = (args.starting_loc_x, args.starting_loc_y)
