@@ -154,7 +154,7 @@ class QLearningTNDP:
         epsilons = []
         training_step = 0
         best_episode_reward = 0
-        best_episode_segment = []
+        best_episode_cells = []
         # All the ACTUALIZED starting locations of the agent.
         actual_starting_locs = set()
         epsilon = self.initial_epsilon
@@ -225,7 +225,7 @@ class QLearningTNDP:
             
             if episode_reward > best_episode_reward:
                 best_episode_reward = episode_reward
-                best_episode_segment = info['segments']
+                best_episode_cells = info['covered_cells_gid']
             
             # Adding the total reward and reduced epsilon values
             rewards.append(episode_reward)
@@ -273,9 +273,27 @@ class QLearningTNDP:
             
             if self.test_episodes > 0:
                 self.test(self.test_episodes, starting_loc, policy=self.policy)
+                
+            fig, ax = plt.subplots(figsize=(5, 5))
+            ax.imshow(self.env.city.agg_od_mx())
+            
+            if not self.env.city.ignore_existing_lines:
+                for i, l in enumerate(self.env.city.existing_lines):
+                    station_locs = self.env.city.vector_to_grid(l)
+                    ax.plot(station_locs[:, 1], station_locs[:, 0], '-o', color='#A1A9FF', label='Existing lines' if i == 0 else None)
+            
+            best_episode_cells = np.array(best_episode_cells)
+            ax.plot(best_episode_cells[:, 1], best_episode_cells[:, 0], '-or', label='Generated line')
+            # If the test episodes are more than 1, we can plot the average line
+
+            self.highlight_cells([(best_episode_cells[0][0].item(), best_episode_cells[0][1].item())], ax=ax, color='limegreen')
+            fig.suptitle(f'Best Episode line \n reward: {best_episode_reward}')
+            fig.legend(loc='lower center', ncol=2)
+            wandb.log({"Best-Episode-Line": wandb.Image(fig)})
+            plt.close(fig)
         
             wandb.finish()
-        return self.Q, rewards, avg_rewards, epsilons, best_episode_reward, best_episode_segment, actual_starting_locs
+        return self.Q, rewards, avg_rewards, epsilons, best_episode_reward, best_episode_cells, actual_starting_locs
 
 
     def test(self, test_episodes, starting_loc=None, policy=None):
