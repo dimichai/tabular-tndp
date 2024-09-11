@@ -199,7 +199,7 @@ class QLearningTNDP:
                 # explore
                 else:
                     action = self.env.action_space.sample(mask=info['action_mask'])
-                
+
                 new_state, reward, done, _, info = self.env.step(action)
 
                 # Here we sum the reward to create a single-objective policy optimization
@@ -272,13 +272,13 @@ class QLearningTNDP:
             plt.close(fig)
             
             if self.test_episodes > 0:
-                self.test(self.test_episodes, starting_loc)
+                self.test(self.test_episodes, starting_loc, policy=self.policy)
         
             wandb.finish()
         return self.Q, rewards, avg_rewards, epsilons, best_episode_reward, best_episode_segment, actual_starting_locs
 
 
-    def test(self, test_episodes, starting_loc=None):
+    def test(self, test_episodes, starting_loc=None, policy=None):
         total_rewards = 0
         generated_lines = []
         if starting_loc:
@@ -291,14 +291,21 @@ class QLearningTNDP:
             locations = [state['location'].tolist()]
             actions = []
             episode_reward = 0
+            episode_step = 0
             while True:
                 state_index = self.env.city.grid_to_vector(state['location'][None, :]).item()
-                action = np.argmax(self.Q[state_index, :] - 10000000 * (1-info['action_mask'].astype(np.int64)))
+                if policy is not None:
+                    action = policy[episode_step]
+                else:
+                    action = np.argmax(self.Q[state_index, :] - 10000000 * (1-info['action_mask'].astype(np.int64)))
+                    action = action.item()
+                
                 actions.append(action)
                 new_state, reward, done, _, info = self.env.step(action)
                 locations.append(new_state['location'].tolist())
                 reward = reward.sum()
                 episode_reward += reward
+                episode_step += 1
                 state = new_state
                 if done:
                     break
@@ -329,6 +336,8 @@ class QLearningTNDP:
             fig.legend(loc='lower center', ncol=2)
             wandb.log({"Average-Generated-Line": wandb.Image(fig)})
             plt.close(fig)
-            
+        
+        ## TODO DELETE these diagnostics
         print(f'Average reward over {test_episodes} episodes: {total_rewards/test_episodes}')
         print(f'Actions of last episode: {actions}')
+        print(f'vids of last episode: {self.env.unwrapped.city.grid_to_vector(np.array(locations)).tolist()}')
