@@ -69,6 +69,7 @@ def train(seed, args, config):
         config.od_type = args.od_type
         config.epsilon_decay_steps = int(config.train_episodes * 0.9)
         config.nr_stations = args.nr_stations
+        config.nr_groups = args.nr_groups
         config.chained_reward = args.chained_reward
         config.ignore_existing_lines = args.ignore_existing_lines
             
@@ -78,10 +79,12 @@ def train(seed, args, config):
             gamma=config.gamma,
             initial_epsilon=config.initial_epsilon,
             final_epsilon=config.final_epsilon,
+            epsilon_warmup_steps=config.epsilon_warmup_steps,
             epsilon_decay_steps=config.epsilon_decay_steps,
             train_episodes=config.train_episodes,
             test_episodes=config.test_episodes,
             nr_stations=config.nr_stations,
+            nr_groups = config.nr_groups,
             seed=seed,
             wandb_project_name=args.project_name,
         )
