@@ -59,10 +59,12 @@ def main(args):
             gamma=args.gamma,
             initial_epsilon=args.initial_epsilon,
             final_epsilon=args.final_epsilon,
+            epsilon_warmup_steps=args.epsilon_warmup_steps,
             epsilon_decay_steps=args.epsilon_decay_steps,
             train_episodes=args.train_episodes,
             test_episodes=args.test_episodes,
             nr_stations=args.nr_stations,
+            nr_groups=args.nr_groups,
             policy=None,
             seed=args.seed,
             wandb_project_name=args.project_name,
@@ -81,10 +83,12 @@ def main(args):
             gamma=args.gamma,
             initial_epsilon=args.initial_epsilon,
             final_epsilon=args.final_epsilon,
+            epsilon_warmup_steps=args.epsilon_warmup_steps,
             epsilon_decay_steps=args.epsilon_decay_steps,
             train_episodes=args.train_episodes,
             test_episodes=args.test_episodes,
             nr_stations=args.nr_stations,
+            nr_groups=args.nr_groups,
             policy=args.policy,
             seed=args.seed,
             wandb_project_name=args.project_name,
@@ -108,7 +112,8 @@ if __name__ == "__main__":
     parser.add_argument('--gamma', default=0.8, type=float)
     parser.add_argument('--initial_epsilon', default=1.0, type=float)
     parser.add_argument('--final_epsilon', default=0.0, type=float)
-    parser.add_argument('--epsilon_decay_steps', default=400, type=float)
+    parser.add_argument('--epsilon_warmup_steps', default=0, type=int)
+    parser.add_argument('--epsilon_decay_steps', default=400, type=int)
     parser.add_argument('--train_episodes', default=500, type=int)
     parser.add_argument('--test_episodes', default=1, type=int)
     parser.add_argument('--no_log', action='store_true', default=False)
@@ -160,6 +165,24 @@ if __name__ == "__main__":
         args.groups_file = f"price_groups_{args.nr_groups}.txt"
         args.ignore_existing_lines = args.ignore_existing_lines
         args.experiment_name = "Q-Learning-Xian"
+        
+        # Violet
+        # args.policy = [0, 0, 1, 2, 1, 1, 2, 2, 2, 1, 1, 0, 0, 1, 0, 1, 2, 2, 2, 2, 1, 0, 1, 1, 0, 0, 1, 2, 2, 2, 2, 1, 1]
+        # args.starting_loc_x = 25
+        # args.starting_loc_y = 3
+        # args.nr_stations = 34
+        
+        # Blue
+        # args.policy = [0, 0, 0, 0, 1, 2, 1, 1, 2, 2, 1, 2, 1, 0, 0, 1, 0, 1, 2, 2, 2, 2, 1, 1, 0, 1, 2, 2, 2, 1, 1, 0, 1, 1]
+        # args.starting_loc_x = 27
+        # args.starting_loc_y = 3
+        # args.nr_stations = 35
+        
+        # Mine best
+        # args.policy = [2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 2, 0, 0, 2, 2, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 0, 0, 2, 0, 2, 2, 2, 2, 2, 1, 1, 1]
+        # args.starting_loc_x = 28
+        # args.starting_loc_y = 1
+        # args.nr_stations = 45
 
     if args.starting_loc_x is not None and args.starting_loc_y is not None:
         args.starting_loc = (args.starting_loc_x, args.starting_loc_y)
