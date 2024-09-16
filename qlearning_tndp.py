@@ -184,6 +184,16 @@ class QLearningTNDP:
                                         
                     ## AVERAGE REWARD BASED ON STARTING LOCATION APPROACH
                     loc = np.unravel_index(starting_loc_avg_reward.argmax(), starting_loc_avg_reward.shape)
+                    
+                    ## SOFTMAX Based on Average reward of starting locations
+                    # Calculate the exponentials of all elements in the array
+                    # exp_values = np.exp(starting_loc_avg_reward - np.max(starting_loc_avg_reward))
+                    # # Sum of all exponentials
+                    # sum_exp = np.sum(exp_values)
+                    # # Compute softmax by dividing each exponential by the sum of exponentials
+                    # softmax = exp_values / sum_exp
+                    # loc = tuple(self.env.city.vector_to_grid(np.random.choice(starting_loc_avg_reward.size, p=softmax.ravel()))[0])
+
                 # explore
                 else:
                     loc = None
