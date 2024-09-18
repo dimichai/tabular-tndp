@@ -457,7 +457,7 @@ class QLearningTNDP:
             fig.suptitle(f'Average Generated line \n reward: {episode_reward}')
             fig.legend(loc='lower center', ncol=2)
             wandb.log({"Average-Generated-Line": wandb.Image(fig)})
-            wandb.log("Average-Test-Reward", total_rewards/test_episodes)
+            wandb.log({"Average-Test-Reward": total_rewards/test_episodes})
             plt.close(fig)
         
         ## TODO DELETE these diagnostics
