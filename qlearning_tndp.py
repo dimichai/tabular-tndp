@@ -1,3 +1,4 @@
+from collections import deque
 import wandb
 import numpy as np
 import matplotlib.pyplot as plt
@@ -168,6 +169,9 @@ class QLearningTNDP:
         state_visit_freq = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
         epsilon = self.initial_epsilon
         
+        last_50_rewards = deque(maxlen=50)  # deque automatically removes oldest entries when full
+
+        
         for episode in range(self.train_episodes):
             # Initialize starting location
             if starting_loc:
@@ -274,13 +278,15 @@ class QLearningTNDP:
             # Incremental update of the average reward of the starting location
             starting_loc_avg_reward[actual_starting_loc[0], actual_starting_loc[1]] += 1/starting_loc_freq[actual_starting_loc[0], actual_starting_loc[1]] * (episode_reward - starting_loc_avg_reward[actual_starting_loc[0], actual_starting_loc[1]])
             self.Q_start[actual_starting_loc[0], actual_starting_loc[1]] += self.alpha * (episode_reward - self.Q_start[actual_starting_loc[0], actual_starting_loc[1]])
+            last_50_rewards.append(episode_reward)
+
             
             if self.log:
                 wandb.log(
                     {
                         "episode": episode,
                         "reward": episode_reward,
-                        # "average_reward": avg_rewards[-1],
+                        "average_reward": np.mean(last_50_rewards),
                         "training_step": training_step,
                         "epsilon": epsilon,
                         "best_episode_reward": best_episode_reward,
