@@ -155,15 +155,16 @@ class QLearningTNDP:
         
         self.Q = np.zeros((self.env.observation_space.n, self.env.action_space.n))
         
-        rewards = []
-        avg_rewards = []
-        epsilons = []
+        # rewards = []
+        # avg_rewards = []
+        # epsilons = []
         training_step = 0
         best_episode_reward = 0
         best_episode_cells = []
         # Frequency of starting locations in the grid
         starting_loc_freq = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
         starting_loc_avg_reward = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
+        self.Q_start = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
         state_visit_freq = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
         epsilon = self.initial_epsilon
         
@@ -180,10 +181,17 @@ class QLearningTNDP:
                 # exploit
                 if exp_exp_tradeoff > epsilon:
                     # ARGMAX -- CLASSIC Q-LEARNING
+                    
                     # loc = tuple(self.env.city.vector_to_grid(np.unravel_index(self.Q.argmax(), self.Q.shape)[0]))
-                                        
+
+                    # ARGMAX OF SUMMED Q-VALUES OF EACH STATE                    
+                    # loc = np.unravel_index(self.Q.sum(axis=1).argmax(), starting_loc_avg_reward.shape)
+
+                    # if loc != loc2:
+                        # print(f'------- SCANDAL loc: {loc}, loc2: {loc2}-------')
+                        
                     ## AVERAGE REWARD BASED ON STARTING LOCATION APPROACH
-                    loc = np.unravel_index(starting_loc_avg_reward.argmax(), starting_loc_avg_reward.shape)
+                    # loc = np.unravel_index(starting_loc_avg_reward.argmax(), starting_loc_avg_reward.shape)
                     
                     ## SOFTMAX Based on Average reward of starting locations
                     # Calculate the exponentials of all elements in the array
@@ -193,6 +201,9 @@ class QLearningTNDP:
                     # # Compute softmax by dividing each exponential by the sum of exponentials
                     # softmax = exp_values / sum_exp
                     # loc = tuple(self.env.city.vector_to_grid(np.random.choice(starting_loc_avg_reward.size, p=softmax.ravel()))[0])
+                    
+                    ## THE Q-START APPROACH
+                    loc = np.unravel_index(self.Q_start.argmax(), self.Q_start.shape)
 
                 # explore
                 else:
@@ -220,7 +231,8 @@ class QLearningTNDP:
                     action = self.policy[episode_step]
                 # exploit
                 elif exp_exp_tradeoff > epsilon:
-                    action = np.argmax(self.Q[state_index, :] - 10000000 * (1-info['action_mask'].astype(np.int64)))
+                    # action = np.argmax(self.Q[state_index, :] - 10000000 * (1-info['action_mask'].astype(np.int64)))
+                    action = np.argmax(np.where(info['action_mask'], self.Q[state_index, :], -np.inf))
                 # explore
                 else:
                     action = self.env.action_space.sample(mask=info['action_mask'])
@@ -254,26 +266,28 @@ class QLearningTNDP:
                 best_episode_cells = info['covered_cells_gid']
             
             # Adding the total reward and reduced epsilon values
-            rewards.append(episode_reward)
+            # rewards.append(episode_reward)
             # Save the average reward over the last 20 episodes
-            avg_rewards.append(np.average(rewards[-20:]))
-            epsilons.append(epsilon)
+            # avg_rewards.append(np.average(rewards[-20:]))
+            # epsilons.append(epsilon)
             
             # Incremental update of the average reward of the starting location
             starting_loc_avg_reward[actual_starting_loc[0], actual_starting_loc[1]] += 1/starting_loc_freq[actual_starting_loc[0], actual_starting_loc[1]] * (episode_reward - starting_loc_avg_reward[actual_starting_loc[0], actual_starting_loc[1]])
+            self.Q_start[actual_starting_loc[0], actual_starting_loc[1]] += self.alpha * (episode_reward - self.Q_start[actual_starting_loc[0], actual_starting_loc[1]])
             
             if self.log:
                 wandb.log(
                     {
                         "episode": episode,
                         "reward": episode_reward,
-                        "average_reward": avg_rewards[-1],
+                        # "average_reward": avg_rewards[-1],
                         "training_step": training_step,
                         "epsilon": epsilon,
                         "best_episode_reward": best_episode_reward,
                     })
 
-            print(f'episode: {episode}, reward: {episode_reward} average rewards of last 20 episodes: {avg_rewards[-1]}')
+            # print(f'episode: {episode}, reward: {episode_reward} average rewards of last 20 episodes: {avg_rewards[-1]}')
+            print(f'episode: {episode}, reward: {episode_reward}')
             
             #Cutting down on exploration by reducing the epsilon
             epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, episode, self.epsilon_warmup_steps, self.final_epsilon)
@@ -331,6 +345,14 @@ class QLearningTNDP:
             wandb.log({"Avg-Reward-Starting-Locations-Table": wandb.Image(fig)})
             plt.close(fig)
             
+            # Plot Q-Start of starting locations
+            fig, ax = plt.subplots(figsize=(10, 5))
+            im = ax.imshow(self.Q_start, label='Q Start', cmap='Blues')
+            fig.colorbar(im)
+            fig.suptitle('Q-Start')
+            wandb.log({"Q-Start": wandb.Image(fig)})
+            plt.close(fig)
+            
             # Plot the state visitation frequency
             fig, ax = plt.subplots(figsize=(10, 5))
             im = ax.imshow(state_visit_freq, label='States', cmap='viridis')
@@ -365,7 +387,8 @@ class QLearningTNDP:
             plt.close(fig)
         
             wandb.finish()
-        return self.Q, rewards, avg_rewards, epsilons, best_episode_reward, best_episode_cells, starting_loc_freq
+        # return self.Q, rewards, avg_rewards, epsilons, best_episode_reward, best_episode_cells, starting_loc_freq
+        return self.Q, best_episode_reward, best_episode_cells, starting_loc_freq
 
 
     def test(self, test_episodes, starting_loc=None, policy=None):
@@ -374,8 +397,9 @@ class QLearningTNDP:
         if starting_loc:
             test_starting_loc = starting_loc
         else:
-            test_starting_loc = tuple(self.env.city.vector_to_grid(np.unravel_index(self.Q.argmax(), self.Q.shape)[0]))
-            
+            # test_starting_loc = tuple(self.env.city.vector_to_grid(np.unravel_index(self.Q.argmax(), self.Q.shape)[0]))
+            test_starting_loc = np.unravel_index(self.Q_start.argmax(), self.Q_start.shape)
+
         for episode in range(test_episodes):
             state, info = self.env.reset(loc=test_starting_loc)
             locations = [state['location'].tolist()]
@@ -387,7 +411,9 @@ class QLearningTNDP:
                 if policy is not None:
                     action = policy[episode_step]
                 else:
-                    action = np.argmax(self.Q[state_index, :] - 10000000 * (1-info['action_mask'].astype(np.int64)))
+                    # action = np.argmax(self.Q[state_index, :] - 10000000 * (1-info['action_mask'].astype(np.int64)))
+                    action = np.argmax(np.where(info['action_mask'], self.Q[state_index, :], -np.inf))
+                    
                     action = action.item()
                 
                 actions.append(action)
