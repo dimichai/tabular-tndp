@@ -73,7 +73,7 @@ def main(args):
             Q_table=Q,
         )
         
-        agent.test(args.test_episodes, starting_loc=args.starting_loc)
+        agent.test(args.test_episodes, args.reward_type, starting_loc=args.starting_loc)
 
     else:
         env = make_env(args.gym_env)
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument('--ignore_existing_lines', action='store_true', default=False)
     parser.add_argument('--od_type', default='pct', type=str, choices=['pct', 'abs'])
     parser.add_argument('--chained_reward', action='store_true', default=False)
-    parser.add_argument('--reward_type', default='max_efficiency', type=str, choices=['max_efficiency'])
+    parser.add_argument('--reward_type', default='max_efficiency', type=str, choices=['max_efficiency', 'ggi2', 'ggi4', 'rawls'])
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--evaluate_model', default=None, type=str, help="Wandb run ID for model to evaluate. Will load the Q table and run --test_episodes. Note that starting_loc will be set to the one with the max Q.") 
 

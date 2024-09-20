@@ -149,7 +149,47 @@ class QLearningTNDP:
         )
         
         wandb.define_metric("*", step_metric="episode")
+        
+    def calculate_reward(self, reward: np.array, reward_type: str):
+        """Calculate the reward based on the reward type.
 
+        Args:
+            reward (np.array): reward vector
+            reward_type (str): type of reward
+
+        Returns:
+            float: reward
+        """
+        if reward_type == 'max_efficiency':
+            return reward.sum()
+        elif reward_type == 'ggi2':
+            return self.ggi_reward(reward, 2)
+        elif reward_type == 'ggi4':
+            return self.ggi_reward(reward, 4)
+        elif reward_type == 'rawls':
+            return reward[0]
+        else:
+            raise ValueError(f"Reward type {reward_type} not implemented")
+        
+    def ggi_reward(self, reward: np.array, weight: int):
+        """Generalized Gini Index reward (see paper for more information).
+        Exponentially smaller weights are assigned to the groups with the highest satisfied origin-destination flows.
+
+        Args:
+            reward (np.array): reward vector
+            weight (int): weight of the reward
+
+        Returns:
+            float: total ggi
+        """
+        # Generate weights
+        weights = 1 / (weight ** np.arange(reward.shape[0]))
+        # Normalize the weights
+        weights /= weights.sum()
+        # Sort rewards and calculate GGI reward
+        sorted_reward = np.sort(reward)
+        
+        return np.sum(sorted_reward * weights)
 
     def train(self, reward_type, starting_loc=None):
         wandb.config['reward_type'] = reward_type
@@ -244,10 +284,7 @@ class QLearningTNDP:
                 new_state, reward, done, _, info = self.env.step(action)
 
                 # Here we sum the reward to create a single-objective policy optimization
-                if reward_type == 'max_efficiency':
-                    reward = reward.sum()
-                else:
-                    raise ValueError(f"Reward type {reward_type} not implemented")
+                reward = self.calculate_reward(reward, reward_type)
                         
                 # Update Q-Table
                 new_state_gid = self.env.city.grid_to_vector(new_state['location'][None, :]).item()
@@ -261,19 +298,12 @@ class QLearningTNDP:
                 state = new_state
 
                 if done:
-                    # print('segments:', self.env.all_sat_od_pairs)
-                    # print('line', self.env.covered_cells_vid)
                     break
 
             if episode_reward > best_episode_reward:
                 best_episode_reward = episode_reward
                 best_episode_cells = info['covered_cells_gid']
             
-            # Adding the total reward and reduced epsilon values
-            # rewards.append(episode_reward)
-            # Save the average reward over the last 20 episodes
-            # avg_rewards.append(np.average(rewards[-20:]))
-            # epsilons.append(epsilon)
             
             # Incremental update of the average reward of the starting location
             starting_loc_avg_reward[actual_starting_loc[0], actual_starting_loc[1]] += 1/starting_loc_freq[actual_starting_loc[0], actual_starting_loc[1]] * (episode_reward - starting_loc_avg_reward[actual_starting_loc[0], actual_starting_loc[1]])
@@ -372,7 +402,7 @@ class QLearningTNDP:
             plt.close(fig)
             
             if self.test_episodes > 0:
-                self.test(self.test_episodes, starting_loc, policy=self.policy)
+                self.test(self.test_episodes, reward_type, starting_loc, policy=self.policy)
                 
             fig, ax = plt.subplots(figsize=(5, 5))
             ax.imshow(self.env.city.agg_od_mx())
@@ -397,8 +427,9 @@ class QLearningTNDP:
         return self.Q, best_episode_reward, best_episode_cells, starting_loc_freq
 
 
-    def test(self, test_episodes, starting_loc=None, policy=None):
+    def test(self, test_episodes, reward_type, starting_loc=None, policy=None):
         total_rewards = 0
+        total_satisfied_ods_by_group = np.zeros(self.nr_groups)
         generated_lines = []
         if starting_loc:
             test_starting_loc = starting_loc
@@ -411,6 +442,7 @@ class QLearningTNDP:
             locations = [state['location'].tolist()]
             actions = []
             episode_reward = 0
+            episode_satisfied_ods_by_group = np.zeros(self.nr_groups)
             episode_step = 0
             while True:
                 state_index = self.env.city.grid_to_vector(state['location'][None, :]).item()
@@ -425,13 +457,14 @@ class QLearningTNDP:
                 actions.append(action)
                 new_state, reward, done, _, info = self.env.step(action)
                 locations.append(new_state['location'].tolist())
-                reward = reward.sum()
-                episode_reward += reward
+                episode_satisfied_ods_by_group += reward
+                episode_reward += self.calculate_reward(reward, reward_type)
                 episode_step += 1
                 state = new_state
                 if done:
                     break
             total_rewards += episode_reward
+            total_satisfied_ods_by_group += episode_satisfied_ods_by_group
             generated_lines.append(locations)
             
         if self.log:
@@ -459,7 +492,18 @@ class QLearningTNDP:
             wandb.log({"Average-Generated-Line": wandb.Image(fig)})
             wandb.log({"Average-Test-Reward": total_rewards/test_episodes})
             plt.close(fig)
-        
+            
+            if self.nr_groups > 1:
+                # Plot a bar plot of satisfied ODs by group
+                fig, ax = plt.subplots(figsize=(5, 5))
+                ax.bar(np.arange(self.nr_groups), total_satisfied_ods_by_group / test_episodes)
+                ax.set_xlabel('Group')
+                ax.set_ylabel('Satisfied ODs')
+                ax.set_title('Satisfied ODs by Group')
+                wandb.log({"Satisfied-ODs-by-Group": wandb.Image(fig)})
+                plt.close(fig)
+            
+
         ## TODO DELETE these diagnostics
         print(f'Average reward over {test_episodes} episodes: {total_rewards/test_episodes}')
         print(f'Actions of last episode: {actions}')
