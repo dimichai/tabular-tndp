@@ -285,10 +285,14 @@ class QLearningTNDP:
 
                 # Here we sum the reward to create a single-objective policy optimization
                 reward = self.calculate_reward(reward, reward_type)
-                        
+                
                 # Update Q-Table
-                new_state_gid = self.env.city.grid_to_vector(new_state['location'][None, :]).item()
-                self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state_index, action])
+                if done:
+                    self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward - self.Q[state_index, action])
+                else:
+                    new_state_gid = self.env.city.grid_to_vector(new_state['location'][None, :]).item()
+                    self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state_index, action])
+                
                 state_visit_freq[new_state['location'][0].item(), new_state['location'][1].item()] += 1
                 episode_reward += reward
 
@@ -353,13 +357,13 @@ class QLearningTNDP:
             plt.close(fig)
             
             # Plot average Q-values, by dividing Q-values by state visitation frequency
-            avg_Q_values = np.divide(Q_values, state_visit_freq, out=np.zeros_like(Q_values), where=state_visit_freq != 0)
-            fig, ax = plt.subplots(figsize=(10, 5))
-            im = ax.imshow(avg_Q_values, label='Average Q values per visitation', cmap='Blues')
-            fig.colorbar(im)
-            fig.suptitle('Average Q-Values per visitation')
-            wandb.log({"Avg-Q-Table": wandb.Image(fig)})
-            plt.close(fig)
+            # avg_Q_values = np.divide(Q_values, state_visit_freq, out=np.zeros_like(Q_values), where=state_visit_freq != 0)
+            # fig, ax = plt.subplots(figsize=(10, 5))
+            # im = ax.imshow(avg_Q_values, label='Average Q values per visitation', cmap='Blues')
+            # fig.colorbar(im)
+            # fig.suptitle('Average Q-Values per visitation')
+            # wandb.log({"Avg-Q-Table": wandb.Image(fig)})
+            # plt.close(fig)
             
             # Plot the starting location frequency
             fig, ax = plt.subplots(figsize=(10, 5))
