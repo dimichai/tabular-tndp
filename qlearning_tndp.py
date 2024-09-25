@@ -211,17 +211,20 @@ class QLearningTNDP:
         
         last_50_rewards = deque(maxlen=50)  # deque automatically removes oldest entries when full
 
+        # To ensure the exploration and starting location is consistent across runs with the same seed (different states)
+        start_loc_rng = random.Random(self.seed)
+        self.env.action_space.seed(self.seed)
         
         for episode in range(self.train_episodes):
             # Initialize starting location
             if starting_loc:
                 if type(starting_loc[0]) == tuple:
-                    loc = (random.randint(*starting_loc[0]), random.randint(*starting_loc[1]))
+                    loc = (start_loc_rng.randint(*starting_loc[0]), start_loc_rng.randint(*starting_loc[1]))
                 else:
                     loc = starting_loc
             else:
                 # Set the starting loc via e-greedy policy
-                exp_exp_tradeoff = random.uniform(0, 1)
+                exp_exp_tradeoff = start_loc_rng.uniform(0, 1)
                 # exploit
                 if exp_exp_tradeoff > epsilon:
                     # ARGMAX -- CLASSIC Q-LEARNING
@@ -230,9 +233,6 @@ class QLearningTNDP:
 
                     # ARGMAX OF SUMMED Q-VALUES OF EACH STATE                    
                     # loc = np.unravel_index(self.Q.sum(axis=1).argmax(), starting_loc_avg_reward.shape)
-
-                    # if loc != loc2:
-                        # print(f'------- SCANDAL loc: {loc}, loc2: {loc2}-------')
                         
                     ## AVERAGE REWARD BASED ON STARTING LOCATION APPROACH
                     # loc = np.unravel_index(starting_loc_avg_reward.argmax(), starting_loc_avg_reward.shape)
@@ -251,24 +251,26 @@ class QLearningTNDP:
 
                 # explore
                 else:
-                    loc = None
+                    loc = (start_loc_rng.randint(0, self.env.city.grid_x_size-1), start_loc_rng.randint(0, self.env.city.grid_y_size-1))
 
             if episode == 0:
                 state, info = self.env.reset(seed=self.seed, loc=loc)
             else:
                 state, info = self.env.reset(loc=loc)
-                
+
             actual_starting_loc = state['location'].tolist()
 
             starting_loc_freq[state['location'][0].item(), state['location'][1].item()] += 1
             state_visit_freq[state['location'][0].item(), state['location'][1].item()] += 1
             episode_reward = 0
             episode_step = 0
+            
+            exploration_rng = random.Random(self.seed)
             while True:
                 state_index = self.env.city.grid_to_vector(state['location'][None, :]).item()
 
                 # Exploration-exploitation trade-off
-                exp_exp_tradeoff = random.uniform(0, 1)
+                exp_exp_tradeoff = exploration_rng.uniform(0, 1)
 
                 # follow predetermined policy (set above)
                 if self.policy:
@@ -287,11 +289,11 @@ class QLearningTNDP:
                 reward = self.calculate_reward(reward, reward_type)
                 
                 # Update Q-Table
-                if done:
-                    self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward - self.Q[state_index, action])
-                else:
-                    new_state_gid = self.env.city.grid_to_vector(new_state['location'][None, :]).item()
-                    self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state_index, action])
+                # if done:
+                #     self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward - self.Q[state_index, action])
+                # else:
+                new_state_gid = self.env.city.grid_to_vector(new_state['location'][None, :]).item()
+                self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state_index, action])
                 
                 state_visit_freq[new_state['location'][0].item(), new_state['location'][1].item()] += 1
                 episode_reward += reward
@@ -326,7 +328,6 @@ class QLearningTNDP:
                         "best_episode_reward": best_episode_reward,
                     })
 
-            # print(f'episode: {episode}, reward: {episode_reward} average rewards of last 20 episodes: {avg_rewards[-1]}')
             print(f'episode: {episode}, reward: {episode_reward}')
             
             #Cutting down on exploration by reducing the epsilon

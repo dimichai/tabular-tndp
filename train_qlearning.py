@@ -160,7 +160,7 @@ if __name__ == "__main__":
     elif args.env == 'xian':
         # Xian pre-defined
         args.city_path = Path(f"./envs/mo-tndp/cities/xian")
-        args.nr_stations = 45
+        args.nr_stations = args.nr_stations
         args.gym_env = 'motndp_xian-v0'
         args.groups_file = f"price_groups_{args.nr_groups}.txt"
         args.ignore_existing_lines = args.ignore_existing_lines
@@ -183,6 +183,25 @@ if __name__ == "__main__":
         # args.starting_loc_x = 28
         # args.starting_loc_y = 1
         # args.nr_stations = 45
+        
+        # xian_20220811_09_05_47.678390
+        # args.policy = [5, 5, 4, 6, 6, 6, 6, 6, 6, 4, 6, 4, 4, 6, 6, 6, 6, 6, 6, 4, 6, 6, 4, 6, 6, 6, 6, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 6, 6, 6, 6]
+        # args.starting_loc_x = 7
+        # args.starting_loc_y = 28
+        # args.nr_stations = 47
+        
+        # xian_20220811_22_34_44.718434
+        # args.policy = [1, 0, 2, 0, 0, 2, 0, 2, 2, 0, 0, 2, 2, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        # args.starting_loc_x = 24
+        # args.starting_loc_y = 3
+        # args.nr_stations = 49
+        
+        # xian_20220812_09_42_57.652815
+        # args.policy = [5, 5, 5, 6, 6, 6, 6, 6, 4, 6, 4, 4, 6, 6, 6, 6, 6, 6, 4, 4, 4, 6, 4, 6, 6, 6, 6, 4, 4, 6, 6, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 6, 6, 6, 6]
+        # args.starting_loc_x = 7
+        # args.starting_loc_y = 28
+        # args.nr_stations = 46
+        
 
     if args.starting_loc_x is not None and args.starting_loc_y is not None:
         args.starting_loc = (args.starting_loc_x, args.starting_loc_y)
