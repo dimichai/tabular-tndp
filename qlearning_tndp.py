@@ -43,6 +43,7 @@ class QLearningTNDP:
         epsilon_warmup_steps,
         epsilon_decay_steps,
         q_start_initial_value,
+        q_initial_value,
         train_episodes,
         test_episodes,
         nr_stations,
@@ -64,6 +65,7 @@ class QLearningTNDP:
         self.epsilon_warmup_steps = epsilon_warmup_steps
         self.epsilon_decay_steps = epsilon_decay_steps
         self.q_start_initial_value = q_start_initial_value
+        self.q_initial_value = q_initial_value
         self.train_episodes = train_episodes
         self.test_episodes = test_episodes
         self.nr_stations = nr_stations
@@ -100,6 +102,7 @@ class QLearningTNDP:
             "epsilon_warmup_steps": self.epsilon_warmup_steps,
             "epsilon_decay_steps": self.epsilon_decay_steps,
             "q_start_initial_value": self.q_start_initial_value,
+            "q_initial_value": self.q_initial_value,
             "train_episodes": self.train_episodes,
             "test_episodes": self.test_episodes,
             "nr_stations": self.nr_stations,
@@ -197,7 +200,7 @@ class QLearningTNDP:
     def train(self, reward_type, starting_loc=None):
         wandb.config['reward_type'] = reward_type
         
-        self.Q = np.zeros((self.env.observation_space.n, self.env.action_space.n))
+        self.Q = np.full((self.env.observation_space.n, self.env.action_space.n), self.q_initial_value)
         
         # rewards = []
         # avg_rewards = []
