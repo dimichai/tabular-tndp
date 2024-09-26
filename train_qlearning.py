@@ -61,6 +61,7 @@ def main(args):
             final_epsilon=args.final_epsilon,
             epsilon_warmup_steps=args.epsilon_warmup_steps,
             epsilon_decay_steps=args.epsilon_decay_steps,
+            q_start_initial_value=args.q_start_initial_value,
             train_episodes=args.train_episodes,
             test_episodes=args.test_episodes,
             nr_stations=args.nr_stations,
@@ -85,6 +86,7 @@ def main(args):
             final_epsilon=args.final_epsilon,
             epsilon_warmup_steps=args.epsilon_warmup_steps,
             epsilon_decay_steps=args.epsilon_decay_steps,
+            q_start_initial_value=args.q_start_initial_value,
             train_episodes=args.train_episodes,
             test_episodes=args.test_episodes,
             nr_stations=args.nr_stations,
@@ -114,6 +116,7 @@ if __name__ == "__main__":
     parser.add_argument('--final_epsilon', default=0.0, type=float)
     parser.add_argument('--epsilon_warmup_steps', default=0, type=int)
     parser.add_argument('--epsilon_decay_steps', default=400, type=int)
+    parser.add_argument('--q_start_initial_value', default=0.0, type=float)
     parser.add_argument('--train_episodes', default=500, type=int)
     parser.add_argument('--test_episodes', default=1, type=int)
     parser.add_argument('--no_log', action='store_true', default=False)

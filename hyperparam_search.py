@@ -80,6 +80,7 @@ def train(seed, args, config):
             final_epsilon=config.final_epsilon,
             epsilon_warmup_steps=config.epsilon_warmup_steps,
             epsilon_decay_steps=config.epsilon_decay_steps,
+            q_start_initial_value=config.q_start_initial_value,
             train_episodes=config.train_episodes,
             test_episodes=config.test_episodes,
             nr_stations=config.nr_stations,

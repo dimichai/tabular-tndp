@@ -42,6 +42,7 @@ class QLearningTNDP:
         final_epsilon,
         epsilon_warmup_steps,
         epsilon_decay_steps,
+        q_start_initial_value,
         train_episodes,
         test_episodes,
         nr_stations,
@@ -62,6 +63,7 @@ class QLearningTNDP:
         self.final_epsilon = final_epsilon
         self.epsilon_warmup_steps = epsilon_warmup_steps
         self.epsilon_decay_steps = epsilon_decay_steps
+        self.q_start_initial_value = q_start_initial_value
         self.train_episodes = train_episodes
         self.test_episodes = test_episodes
         self.nr_stations = nr_stations
@@ -97,6 +99,7 @@ class QLearningTNDP:
             "final_epsilon": self.final_epsilon,
             "epsilon_warmup_steps": self.epsilon_warmup_steps,
             "epsilon_decay_steps": self.epsilon_decay_steps,
+            "q_start_initial_value": self.q_start_initial_value,
             "train_episodes": self.train_episodes,
             "test_episodes": self.test_episodes,
             "nr_stations": self.nr_stations,
@@ -205,7 +208,8 @@ class QLearningTNDP:
         # Frequency of starting locations in the grid
         starting_loc_freq = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
         starting_loc_avg_reward = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
-        self.Q_start = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
+        # self.Q_start = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
+        self.Q_start = np.full((self.env.city.grid_x_size, self.env.city.grid_y_size), self.q_start_initial_value)
         state_visit_freq = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
         epsilon = self.initial_epsilon
         
