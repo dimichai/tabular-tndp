@@ -1,0 +1,28 @@
+method: random
+metric:
+  goal: maximize
+  name: average_reward
+parameters:
+  alpha:
+    values: [0.1, 0.2, 0.3, 0.4, 0.5]
+  gamma:
+    value: 1
+  train_episodes:
+    values: [7000, 10000, 15000, 20000]
+  epsilon_warmup_steps:
+    value: 0
+  epsilon_decay_steps:
+    value: 0
+  q_start_initial_value:
+    values: [20, 40, 60, 80, 100, 120, 140]
+  q_initial_value:
+    values: [20, 40, 60, 80, 100, 120, 140]
+  initial_epsilon:
+    values: [0.1, 0.2, 0.3, 0.4]
+  final_epsilon:
+    value: 0
+  test_episodes:
+    value: 1
+  exploration_type:
+    value: 'egreedy_constant'
+  

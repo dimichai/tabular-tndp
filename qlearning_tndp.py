@@ -38,6 +38,7 @@ class QLearningTNDP:
         env,
         alpha: float,
         gamma: float,
+        exploration_type: str,
         initial_epsilon,
         final_epsilon,
         epsilon_warmup_steps,
@@ -60,6 +61,7 @@ class QLearningTNDP:
         self.env_id = env.unwrapped.spec.id
         self.alpha = alpha
         self.gamma = gamma
+        self.exploration_type = exploration_type
         self.initial_epsilon = initial_epsilon
         self.final_epsilon = final_epsilon
         self.epsilon_warmup_steps = epsilon_warmup_steps
@@ -97,6 +99,7 @@ class QLearningTNDP:
             "od_type": self.env.od_type,
             "alpha": self.alpha,
             "gamma": self.gamma,
+            "exploration_type": self.exploration_type,
             "initial_epsilon": self.initial_epsilon,
             "final_epsilon": self.final_epsilon,
             "epsilon_warmup_steps": self.epsilon_warmup_steps,
@@ -317,7 +320,8 @@ class QLearningTNDP:
             print(f'episode: {episode}, reward: {episode_reward}')
             
             #Cutting down on exploration by reducing the epsilon
-            epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, episode, self.epsilon_warmup_steps, self.final_epsilon)
+            if self.exploration_type == 'egreedy':
+                epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, episode, self.epsilon_warmup_steps, self.final_epsilon)
         
         if self.log:
             # Log the final Q-table

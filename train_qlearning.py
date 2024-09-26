@@ -57,6 +57,7 @@ def main(args):
             env,
             alpha=args.alpha,
             gamma=args.gamma,
+            exploration_type=args.exploration_type,
             initial_epsilon=args.initial_epsilon,
             final_epsilon=args.final_epsilon,
             epsilon_warmup_steps=args.epsilon_warmup_steps,
@@ -83,6 +84,7 @@ def main(args):
             env,
             alpha=args.alpha,
             gamma=args.gamma,
+            exploration_type=args.exploration_type,
             initial_epsilon=args.initial_epsilon,
             final_epsilon=args.final_epsilon,
             epsilon_warmup_steps=args.epsilon_warmup_steps,
@@ -127,6 +129,7 @@ if __name__ == "__main__":
     parser.add_argument('--od_type', default='pct', type=str, choices=['pct', 'abs'])
     parser.add_argument('--chained_reward', action='store_true', default=False)
     parser.add_argument('--reward_type', default='max_efficiency', type=str, choices=['max_efficiency', 'ggi2', 'ggi4', 'rawls'])
+    parser.add_argument('--exploration_type', default='egreedy', type=str, choices=['egreedy', 'egreedy_constant'])
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--evaluate_model', default=None, type=str, help="Wandb run ID for model to evaluate. Will load the Q table and run --test_episodes. Note that starting_loc will be set to the one with the max Q.") 
 

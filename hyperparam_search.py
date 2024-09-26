@@ -76,6 +76,7 @@ def train(seed, args, config):
             env,
             alpha=config.alpha,
             gamma=config.gamma,
+            exploration_type=config.exploration_type,
             initial_epsilon=config.initial_epsilon,
             final_epsilon=config.final_epsilon,
             epsilon_warmup_steps=config.epsilon_warmup_steps,
