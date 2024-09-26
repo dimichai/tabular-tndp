@@ -231,28 +231,7 @@ class QLearningTNDP:
                 exp_exp_tradeoff = start_loc_rng.uniform(0, 1)
                 # exploit
                 if exp_exp_tradeoff > epsilon:
-                    # ARGMAX -- CLASSIC Q-LEARNING
-                    
-                    # loc = tuple(self.env.city.vector_to_grid(np.unravel_index(self.Q.argmax(), self.Q.shape)[0]))
-
-                    # ARGMAX OF SUMMED Q-VALUES OF EACH STATE                    
-                    # loc = np.unravel_index(self.Q.sum(axis=1).argmax(), starting_loc_avg_reward.shape)
-                        
-                    ## AVERAGE REWARD BASED ON STARTING LOCATION APPROACH
-                    # loc = np.unravel_index(starting_loc_avg_reward.argmax(), starting_loc_avg_reward.shape)
-                    
-                    ## SOFTMAX Based on Average reward of starting locations
-                    # Calculate the exponentials of all elements in the array
-                    # exp_values = np.exp(starting_loc_avg_reward - np.max(starting_loc_avg_reward))
-                    # # Sum of all exponentials
-                    # sum_exp = np.sum(exp_values)
-                    # # Compute softmax by dividing each exponential by the sum of exponentials
-                    # softmax = exp_values / sum_exp
-                    # loc = tuple(self.env.city.vector_to_grid(np.random.choice(starting_loc_avg_reward.size, p=softmax.ravel()))[0])
-                    
-                    ## THE Q-START APPROACH
                     loc = np.unravel_index(self.Q_start.argmax(), self.Q_start.shape)
-
                 # explore
                 else:
                     loc = (start_loc_rng.randint(0, self.env.city.grid_x_size-1), start_loc_rng.randint(0, self.env.city.grid_y_size-1))
