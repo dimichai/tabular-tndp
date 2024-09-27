@@ -89,6 +89,7 @@ def train(seed, args, config):
             nr_groups = config.nr_groups,
             seed=seed,
             wandb_project_name=args.project_name,
+            ucb_c_qstart=config.ucb_c_qstart,
         )
             
         agent.train(args.reward_type, args.starting_loc)

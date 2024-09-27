@@ -55,7 +55,9 @@ class QLearningTNDP:
         wandb_experiment_name=None,
         wandb_run_id=None,
         Q_table=None,
-        log: bool = True
+        log: bool = True,
+        ucb_c_qstart=None,
+        ucb_c_q=None,
     ):
         self.env = env
         self.env_id = env.unwrapped.spec.id
@@ -80,6 +82,8 @@ class QLearningTNDP:
         if Q_table is not None:
             self.Q = Q_table # Q_table to start with or evaluate
         self.log = log
+        self.ucb_c_qstart = ucb_c_qstart
+        self.ucb_c_q = ucb_c_q
         
         if log:
             if not wandb_run_id:
@@ -114,6 +118,8 @@ class QLearningTNDP:
             "policy": self.policy,
             "chained_reward": self.env.chained_reward,
             "ignore_existing_lines": self.env.city.ignore_existing_lines,
+            "ucb_c_qstart": self.ucb_c_qstart,
+            "ucb_c_q": self.ucb_c_q,
         }
         
     def highlight_cells(self, cells, ax, **kwargs):
@@ -203,19 +209,20 @@ class QLearningTNDP:
     def train(self, reward_type, starting_loc=None):
         wandb.config['reward_type'] = reward_type
         
-        self.Q = np.full((self.env.observation_space.n, self.env.action_space.n), self.q_initial_value)
+        if self.exploration_type != 'ucb':
+            self.Q_start = np.full((self.env.city.grid_x_size, self.env.city.grid_y_size), self.q_start_initial_value)
+            self.Q = np.full((self.env.observation_space.n, self.env.action_space.n), self.q_initial_value)
+        else:
+            self.Q_start = np.random.random((self.env.city.grid_x_size, self.env.city.grid_y_size))
+            self.Q = np.random.random((self.env.observation_space.n, self.env.action_space.n))
+            action_counts = np.zeros((self.env.observation_space.n, self.env.action_space.n))
         
-        # rewards = []
-        # avg_rewards = []
-        # epsilons = []
         training_step = 0
         best_episode_reward = 0
         best_episode_cells = []
         # Frequency of starting locations in the grid
         starting_loc_freq = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
         starting_loc_avg_reward = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
-        # self.Q_start = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
-        self.Q_start = np.full((self.env.city.grid_x_size, self.env.city.grid_y_size), self.q_start_initial_value)
         state_visit_freq = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
         epsilon = self.initial_epsilon
         
@@ -226,21 +233,27 @@ class QLearningTNDP:
         self.env.action_space.seed(self.seed)
         
         for episode in range(self.train_episodes):
-            # Initialize starting location
+            # If starting location is given, either use it directly or if range, sample from it
             if starting_loc:
                 if type(starting_loc[0]) == tuple:
                     loc = (start_loc_rng.randint(*starting_loc[0]), start_loc_rng.randint(*starting_loc[1]))
                 else:
                     loc = starting_loc
+            # Select a starting location using exploration
             else:
-                # Set the starting loc via e-greedy policy
-                exp_exp_tradeoff = start_loc_rng.uniform(0, 1)
-                # exploit
-                if exp_exp_tradeoff > epsilon:
-                    loc = np.unravel_index(self.Q_start.argmax(), self.Q_start.shape)
-                # explore
-                else:
-                    loc = (start_loc_rng.randint(0, self.env.city.grid_x_size-1), start_loc_rng.randint(0, self.env.city.grid_y_size-1))
+                if self.exploration_type == 'egreedy' or self.exploration_type == 'egreedy_constant':
+                    # Set the starting loc via e-greedy policy
+                    exp_exp_tradeoff = start_loc_rng.uniform(0, 1)
+                    # exploit
+                    if exp_exp_tradeoff > epsilon:
+                        loc = np.unravel_index(self.Q_start.argmax(), self.Q_start.shape)
+                    # explore
+                    else:
+                        loc = (start_loc_rng.randint(0, self.env.city.grid_x_size-1), start_loc_rng.randint(0, self.env.city.grid_y_size-1))
+                elif self.exploration_type == 'ucb':
+                    # Set the starting loc via UCB policy (we use episode as the time step because this action is taken only at the start of the episode)
+                    ucb_values = self.Q_start + self.ucb_c_qstart * np.sqrt(np.log(episode + 1) / (starting_loc_freq + 1))
+                    loc = np.unravel_index(ucb_values.argmax(), self.Q_start.shape)
 
             if episode == 0:
                 state, info = self.env.reset(seed=self.seed, loc=loc)
@@ -258,19 +271,23 @@ class QLearningTNDP:
             while True:
                 state_index = self.env.city.grid_to_vector(state['location'][None, :]).item()
 
-                # Exploration-exploitation trade-off
-                exp_exp_tradeoff = exploration_rng.uniform(0, 1)
-
                 # follow predetermined policy (set above)
                 if self.policy:
                     action = self.policy[episode_step]
-                # exploit
-                elif exp_exp_tradeoff > epsilon:
-                    # action = np.argmax(self.Q[state_index, :] - 10000000 * (1-info['action_mask'].astype(np.int64)))
-                    action = np.argmax(np.where(info['action_mask'], self.Q[state_index, :], -np.inf))
-                # explore
-                else:
-                    action = self.env.action_space.sample(mask=info['action_mask'])
+                elif self.exploration_type == 'egreedy' or self.exploration_type == 'egreedy_constant':
+                    # Exploration-exploitation trade-off
+                    exp_exp_tradeoff = exploration_rng.uniform(0, 1)
+                    # exploit
+                    if exp_exp_tradeoff > epsilon:
+                        action = np.argmax(np.where(info['action_mask'], self.Q[state_index, :], -np.inf))
+                    # explore
+                    else:
+                        action = self.env.action_space.sample(mask=info['action_mask'])
+                elif self.exploration_type == 'ucb':
+                    # UCB policy
+                    ucb_values = self.Q[state_index, :] + self.ucb_c_q * np.sqrt(np.log(training_step + 1) / (action_counts[state_index] + 1))
+                    action = np.argmax(np.where(info['action_mask'], ucb_values, -np.inf))
+                    action_counts[state_index, action] += 1
 
                 new_state, reward, done, _, info = self.env.step(action)
 

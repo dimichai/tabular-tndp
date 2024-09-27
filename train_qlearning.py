@@ -74,6 +74,8 @@ def main(args):
             wandb_experiment_name=args.experiment_name,
             wandb_run_id=args.evaluate_model,
             Q_table=Q,
+            ucb_c_qstart=args.ucb_c_qstart,
+            ucb_c_q=args.ucb_c_q
         )
         
         agent.test(args.test_episodes, args.reward_type, starting_loc=args.starting_loc)
@@ -98,7 +100,9 @@ def main(args):
             policy=args.policy,
             seed=args.seed,
             wandb_project_name=args.project_name,
-            wandb_experiment_name=args.experiment_name
+            wandb_experiment_name=args.experiment_name,
+            ucb_c_qstart=args.ucb_c_qstart,
+            ucb_c_q=args.ucb_c_q
         )
         agent.train(args.reward_type, args.starting_loc)
 
@@ -129,11 +133,14 @@ if __name__ == "__main__":
     parser.add_argument('--od_type', default='pct', type=str, choices=['pct', 'abs'])
     parser.add_argument('--chained_reward', action='store_true', default=False)
     parser.add_argument('--reward_type', default='max_efficiency', type=str, choices=['max_efficiency', 'ggi2', 'ggi4', 'rawls'])
-    parser.add_argument('--exploration_type', default='egreedy', type=str, choices=['egreedy', 'egreedy_constant'])
+    parser.add_argument('--exploration_type', default='egreedy', type=str, choices=['egreedy', 'egreedy_constant', 'ucb'])
+    parser.add_argument('--ucb_c_qstart', default=None, type=float)
+    parser.add_argument('--ucb_c_q', default=None, type=float)
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--evaluate_model', default=None, type=str, help="Wandb run ID for model to evaluate. Will load the Q table and run --test_episodes. Note that starting_loc will be set to the one with the max Q.") 
 
     args = parser.parse_args()
+    assert args.exploration_type != 'ucb' or (args.ucb_c_qstart is not None and args.ucb_c_q is not None), "UCB requires (float) values for c, set them with --ucb_c_qstart and --ucb_c_q"
     print(args)
 
     np.random.seed(args.seed)
