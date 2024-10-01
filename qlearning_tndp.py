@@ -213,8 +213,8 @@ class QLearningTNDP:
         wandb.config['reward_type'] = reward_type
         
         if self.exploration_type != 'ucb':
-            self.Q_start = np.full((self.env.city.grid_x_size, self.env.city.grid_y_size), self.q_start_initial_value)
-            self.Q = np.full((self.env.observation_space.n, self.env.action_space.n), self.q_initial_value)
+            self.Q_start = np.full((self.env.city.grid_x_size, self.env.city.grid_y_size), self.q_start_initial_value, dtype=np.float64)
+            self.Q = np.full((self.env.observation_space.n, self.env.action_space.n), self.q_initial_value, dtype=np.float64)
         else:
             self.Q_start = np.random.random((self.env.city.grid_x_size, self.env.city.grid_y_size))
             self.Q = np.random.random((self.env.observation_space.n, self.env.action_space.n))
