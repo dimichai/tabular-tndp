@@ -90,6 +90,8 @@ def train(seed, args, config):
             seed=seed,
             wandb_project_name=args.project_name,
             ucb_c_qstart=config.ucb_c_qstart,
+            ucb_c_q=config.ucb_c_q,
+            update_method=config.update_method
         )
             
         agent.train(args.reward_type, args.starting_loc)
@@ -156,7 +158,7 @@ if __name__ == "__main__":
     elif args.env == 'xian':
         args.env_id = 'motndp_xian-v0'
         args.city_path = Path(f"./envs/mo-tndp/cities/xian")
-        args.nr_stations = 45
+        args.nr_stations = 47
         args.groups_file = f"price_groups_{args.nr_groups}.txt"
         args.experiment_name = "Q-Learning-Dilemma"
     elif args.env == 'amsterdam':

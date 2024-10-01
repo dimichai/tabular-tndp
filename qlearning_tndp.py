@@ -58,6 +58,7 @@ class QLearningTNDP:
         log: bool = True,
         ucb_c_qstart=None,
         ucb_c_q=None,
+        update_method: str = 'td',
     ):
         self.env = env
         self.env_id = env.unwrapped.spec.id
@@ -84,6 +85,7 @@ class QLearningTNDP:
         self.log = log
         self.ucb_c_qstart = ucb_c_qstart
         self.ucb_c_q = ucb_c_q
+        self.update_method = update_method
         
         if log:
             if not wandb_run_id:
@@ -120,6 +122,7 @@ class QLearningTNDP:
             "ignore_existing_lines": self.env.city.ignore_existing_lines,
             "ucb_c_qstart": self.ucb_c_qstart,
             "ucb_c_q": self.ucb_c_q,
+            "update_method": self.update_method,
         }
         
     def highlight_cells(self, cells, ax, **kwargs):
@@ -233,6 +236,10 @@ class QLearningTNDP:
         self.env.action_space.seed(self.seed)
         
         for episode in range(self.train_episodes):
+            episode_states = []
+            episode_actions = []
+            episode_rewards = []
+
             # If starting location is given, either use it directly or if range, sample from it
             if starting_loc:
                 if type(starting_loc[0]) == tuple:
@@ -294,12 +301,14 @@ class QLearningTNDP:
                 # Here we sum the reward to create a single-objective policy optimization
                 reward = self.calculate_reward(reward, reward_type)
                 
-                # Update Q-Table
-                # if done:
-                #     self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward - self.Q[state_index, action])
-                # else:
-                new_state_gid = self.env.city.grid_to_vector(new_state['location'][None, :]).item()
-                self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state_index, action])
+                episode_states.append(state_index)
+                episode_actions.append(action)
+                episode_rewards.append(reward)
+                
+                if self.update_method == 'td':
+                    new_state_gid = self.env.city.grid_to_vector(new_state['location'][None, :]).item()
+                    self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state_index, action])
+                    # print(f"from {state['location']} to {new_state['location']} with action {action} and reward {reward} New-Q: {self.Q[state_index, action]}")
                 
                 state_visit_freq[new_state['location'][0].item(), new_state['location'][1].item()] += 1
                 episode_reward += reward
@@ -311,6 +320,19 @@ class QLearningTNDP:
 
                 if done:
                     break
+                        
+            if self.update_method == 'mc':
+                episode_rewards = np.array(episode_rewards)
+                episode_states = np.array(episode_states)
+                episode_actions = np.array(episode_actions)
+
+                # Compute the cumulative discounted returns (G) for the episode in a vectorized manner
+                discounts = np.power(self.gamma, np.arange(len(episode_rewards)))
+                G = np.cumsum(episode_rewards[::-1] * discounts[::-1])[::-1] / discounts
+
+                # Vectorized Q-learning update
+                state_action_indices = np.column_stack((episode_states, episode_actions))
+                self.Q[state_action_indices[:, 0], state_action_indices[:, 1]] += self.alpha * (G - self.Q[state_action_indices[:, 0], state_action_indices[:, 1]])
 
             if episode_reward > best_episode_reward:
                 best_episode_reward = episode_reward

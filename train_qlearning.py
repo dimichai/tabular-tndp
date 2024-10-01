@@ -75,7 +75,8 @@ def main(args):
             wandb_run_id=args.evaluate_model,
             Q_table=Q,
             ucb_c_qstart=args.ucb_c_qstart,
-            ucb_c_q=args.ucb_c_q
+            ucb_c_q=args.ucb_c_q,
+            update_method=args.update_method
         )
         
         agent.test(args.test_episodes, args.reward_type, starting_loc=args.starting_loc)
@@ -102,7 +103,8 @@ def main(args):
             wandb_project_name=args.project_name,
             wandb_experiment_name=args.experiment_name,
             ucb_c_qstart=args.ucb_c_qstart,
-            ucb_c_q=args.ucb_c_q
+            ucb_c_q=args.ucb_c_q,
+            update_method=args.update_method
         )
         agent.train(args.reward_type, args.starting_loc)
 
@@ -138,6 +140,7 @@ if __name__ == "__main__":
     parser.add_argument('--ucb_c_q', default=None, type=float)
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--evaluate_model', default=None, type=str, help="Wandb run ID for model to evaluate. Will load the Q table and run --test_episodes. Note that starting_loc will be set to the one with the max Q.") 
+    parser.add_argument('--update_method', default='td', type=str, choices=['td', 'mc'])
 
     args = parser.parse_args()
     assert args.exploration_type != 'ucb' or (args.ucb_c_qstart is not None and args.ucb_c_q is not None), "UCB requires (float) values for c, set them with --ucb_c_qstart and --ucb_c_q"
@@ -217,6 +220,11 @@ if __name__ == "__main__":
         # args.starting_loc_x = 7
         # args.starting_loc_y = 28
         # args.nr_stations = 46
+        
+        # args.policy = [6, 6, 6, 6, 4, 4, 4, 4, 4, 6, 4, 4, 6, 6, 6, 6, 6, 6, 4, 6, 6, 6, 4, 4, 4, 4, 4, 6, 6, 6, 4, 5, 4, 5, 4, 4, 4, 4, 4, 6, 6, 6, 6, 6]
+        # args.starting_loc_x = 6
+        # args.starting_loc_y = 24
+        # args.nr_stations = 45
         
 
     if args.starting_loc_x is not None and args.starting_loc_y is not None:
