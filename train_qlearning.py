@@ -34,6 +34,7 @@ def main(args):
 
         run = api.run(f"TNDP-RL/{args.evaluate_model}")
         run.file(f"q_tables/{args.evaluate_model}.npy").download(replace=True)
+        run.file(f"q_tables/{args.evaluate_model}_qstart.npy").download(replace=True)
         
         import json
         run_config = json.loads(run.json_config)
@@ -53,6 +54,7 @@ def main(args):
         
         # Load the Q-table  
         Q = np.load(f"q_tables/{args.evaluate_model}.npy")
+        Q_start = np.load(f"q_tables/{args.evaluate_model}_qstart.npy")
         agent = QLearningTNDP(
             env,
             alpha=args.alpha,
@@ -74,6 +76,7 @@ def main(args):
             wandb_experiment_name=args.experiment_name,
             wandb_run_id=args.evaluate_model,
             Q_table=Q,
+            Q_start_table=Q_start,
             ucb_c_qstart=args.ucb_c_qstart,
             ucb_c_q=args.ucb_c_q,
             update_method=args.update_method

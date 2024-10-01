@@ -55,6 +55,7 @@ class QLearningTNDP:
         wandb_experiment_name=None,
         wandb_run_id=None,
         Q_table=None,
+        Q_start_table=None,
         log: bool = True,
         ucb_c_qstart=None,
         ucb_c_q=None,
@@ -82,6 +83,8 @@ class QLearningTNDP:
         self.wandb_run_id = wandb_run_id
         if Q_table is not None:
             self.Q = Q_table # Q_table to start with or evaluate
+        if Q_start_table is not None:
+            self.Q_start = Q_start_table # Q_start_table to start with or evaluate
         self.log = log
         self.ucb_c_qstart = ucb_c_qstart
         self.ucb_c_q = ucb_c_q
@@ -367,6 +370,11 @@ class QLearningTNDP:
             final_Q_table = Path(f"./q_tables/{wandb.run.id}.npy")
             np.save(final_Q_table, self.Q)
             wandb.save(final_Q_table.as_posix())
+            
+            # Log the final Q-start table
+            final_Q_start_table = Path(f"./q_tables/{wandb.run.id}_qstart.npy")
+            np.save(final_Q_start_table, self.Q_start)
+            wandb.save(final_Q_start_table.as_posix())
             
             # Log the Q-table as an image
             fig, ax = plt.subplots(figsize=(10, 5))
