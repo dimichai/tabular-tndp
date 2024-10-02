@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument("--sweep-id", type=str, help="Sweep id to use if it already exists (helpful to parallelize the search)", required=False)
     parser.add_argument("--sweep-count", type=int, help="Number of trials to do in the sweep worker", default=10)
     parser.add_argument("--num-seeds", type=int, help="Number of seeds to use for the sweep", default=3)
-    parser.add_argument("--seed", type=int, help="Random seed to start from, seeds will be in [seed, seed+num-seeds)", default=10)
+    parser.add_argument("--seed", type=int, help="Random seed to start from, seeds will be in [seed, seed+num-seeds)", default=42)
     parser.add_argument("--config-path", type=str, help="path of config file.")
     parser.add_argument('--nr_groups', default=2, type=int)
     parser.add_argument('--starting_loc_x', default=None, type=int)
