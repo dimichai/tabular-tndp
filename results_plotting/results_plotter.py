@@ -4,6 +4,15 @@ import numpy as np
 import wandb
 import pandas as pd
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 18})
+# Set the color palette to start with two specific colors using matplotlib
+
+start_colors = ["#ff7f5e", "#1f77b4"]  # Blue and orange
+default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+custom_colors = start_colors + [c for c in default_colors if c not in start_colors]
+plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors)
+
+
 
 PROJECT_NAME = 'TNDP-RL'
 REQ_SEEDS = 5 # to control if a model was not run for sufficient seeds
@@ -74,14 +83,14 @@ def load_all_results_from_wadb(all_objectives, env_name=None):
                         # Convert to DataFrame
                         history = pd.DataFrame(history)
                         rewards = history[history['average_reward'] > 0]['average_reward'].tolist()
+                        
+                        if len(rewards) > 0:
+                            avg_rewards_by_seed.append(rewards)
+                        else:
+                            print(f"WARNING - No average_reward values in {model_name}, {reward_type} - {model['run_ids'][i]}")
                     else:
                         rewards = []
                         
-                    if len(rewards) > 0:
-                        avg_rewards_by_seed.append(rewards)
-                    else:
-                        print(f"WARNING - No average_reward values in {model_name}, {reward_type} - {model['run_ids'][i]}")
-                    ###
 
             model_name_adj = model_name.replace(f'-{env_name}', '')
             if len(avg_rewards_by_seed) > 0:
@@ -111,15 +120,15 @@ def mean_ci(series):
     return pd.Series([mean, ci_min, ci_max], index=['mean', 'ci_min', 'ci_max'])
 
 xian_results_summary = xian_results.groupby(['reward_type', 'model', 'metric'])['value'].apply(mean_ci).unstack().reset_index()
-xian_results_summary = xian_results_summary.round(2).sort_values('mean', ascending=False)
 xian_results_summary
 
 #%%
 # Plot a bar chart of xian_results_summary with error bars
-fig, axs = plt.subplots(2, 2, figsize=(8, 6))
+fig, axs = plt.subplots(2, 2, figsize=(9, 6))
 axs = axs.flatten()
 
 reward_types = ['max_efficiency', 'ggi2', 'ggi4', 'rawls']
+reward_type_names = ['Max Efficiency', 'GGI(2)', 'GGI(4)', 'Rawls']
 
 for idx, reward_type in enumerate(reward_types):
     # Filter data for the current reward type
@@ -133,20 +142,66 @@ for idx, reward_type in enumerate(reward_types):
     
     # Set labels and title for each subplot
     axs[idx].set_xticks(range(len(data['model'].unique())))
-    axs[idx].set_xticklabels(data['model'].unique(), rotation=45, ha='right')
+    axs[idx].set_xticklabels(data['model'].unique())
     axs[idx].set_ylabel('Value')
-    axs[idx].set_title(f'{reward_type.capitalize()} Reward')
+    axs[idx].set_title(f'{reward_type_names[idx]}')
     
 plt.tight_layout()
 plt.show()
 
-#%%
-# Plot average reward over time
-xian_avg_rw_over_time.plot(alpha=0.7, figsize=(12, 6))
-plt.title('Average Reward Over Time')
-plt.xlabel('Episode')
-plt.ylabel('Average Reward')
-plt.legend(title='Model and Reward Type', bbox_to_anchor=(1.05, 1), loc='upper left')
+#%% Plot average reward over time
+wandb_to_local_mapper = [
+    {
+        "reward_type": "max_efficiency",
+        "mapping": {
+            'eng3ru2n': 'xian_20241003_11_05_54.565620',
+            'fgor0rft': 'xian_20241003_11_06_57.001302',
+            'hxqtppx7': 'xian_20241002_21_32_09.662719',
+            'hv9p3c2u': 'xian_20241002_21_31_53.751992',
+            'j0ejk07m': 'xian_20241003_11_10_45.833755',
+        }
+    }
+]
+
+result_dir = '../../fair-network-expansion/result/new'
+
+fig, ax = plt.subplots(figsize=(8, 5))
+
+reward_type = 'max_efficiency'
+reward_type_name = 'Max Efficiency'
+
+# Add lines from the mapper first
+mapper = next((m for m in wandb_to_local_mapper if m['reward_type'] == reward_type), None)
+if mapper:
+    mapping = mapper['mapping']
+    all_reward_data = []
+    for wandb_id, local_dir in mapping.items():
+        file_path = f"{result_dir}/{local_dir}/reward_actloss_criloss.txt"
+        try:
+            reward_data = np.loadtxt(file_path)
+            all_reward_data.append(reward_data[:, 0])
+        except FileNotFoundError:
+            print(f"File not found: {file_path}")
+    
+    if all_reward_data:
+        avg_reward_data = np.mean(all_reward_data, axis=0)
+        ax.semilogx(np.arange(1, len(avg_reward_data) + 1), avg_reward_data, label="DeepRL", linewidth=2)
+
+# Then plot the other data
+data = xian_avg_rw_over_time.filter(regex=f'.*{reward_type}')
+
+for column in data.columns:
+    interval_data = data[column].iloc[::128].reset_index(drop=True)
+    ax.semilogx(interval_data.index + 1, interval_data, label='TabularMNEP', linewidth=2)
+
+# Set labels and title
+ax.set_xlabel('Steps (x128 episodes)')
+ax.set_ylabel('Average Reward')
+ax.set_title(f'Average Reward Over Time - {reward_type_name}')
+
+# Adjust legend
+ax.legend(loc='lower right', fontsize=16)
+
 plt.tight_layout()
 plt.show()
 
