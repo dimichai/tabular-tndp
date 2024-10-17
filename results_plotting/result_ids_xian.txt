@@ -16,7 +16,7 @@
    {
       "reward_type": "ggi2",
       "models": [
-         {"name": "DeepRL", "run_ids": ["fnmle03e", "w65hkj2s"]},
+         {"name": "DeepRL", "run_ids": ["fnmle03e", "w65hkj2s", "sxewnau1", "3e2nfp27", "ywu9739f"]},
          {"name": "TabularMNEP", "run_ids": ["v4txrdje", "v9vv3h83", "cduu2t7z", "9slx9krw", "4hrjl48t"]}
       ]
    },

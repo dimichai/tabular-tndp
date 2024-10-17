@@ -1,0 +1,30 @@
+[
+   {
+      "reward_type": "max_efficiency",
+      "models": [
+         {"name": "DeepRL", "run_ids": ["1se01ud5", "5sif9a7w", "z4a9e3fw", "6ot0zo6e", "odcongwb"]},
+         {"name": "TabularMNEP", "run_ids": ["ots8htds", "gb3uhmp2", "00cztd9i", "arcixj9t", "fynh4n1a"]}
+      ]
+   },
+   {
+      "reward_type": "rawls",
+      "models": [
+         {"name": "DeepRL", "run_ids": ["xz7id1ah", "9crampld", "qwzu05ht", "425us7iw", "fxnv8t7d"]},
+         {"name": "TabularMNEP", "run_ids": ["rtvw0hds", "2x6lfzug", "ijbyjkpo", "1xpr867m", "jlocnhs8"]}
+      ]
+   },
+   {
+      "reward_type": "ggi2",
+      "models": [
+         {"name": "DeepRL", "run_ids": ["6792khhp", "mztnn5b8", "ngccing5", "a6aawfrs", "hs117if4"]},
+         {"name": "TabularMNEP", "run_ids": ["4j3lo4md", "mc1vwnnv", "ucwq3pis", "quimcanf", "1p4uk2rp"]}
+      ]
+   },
+   {
+      "reward_type": "ggi4",
+      "models": [
+         {"name": "DeepRL", "run_ids": ["gjncts17", "sg3bevw0", "v5yneeht", "4qjonxz6", "lxatlyoc"]},
+         {"name": "TabularMNEP", "run_ids": ["gzj6xzzy", "76dg8ssd", "kzmkqh42", "rqu574cv", "fe1k533y"]}
+      ]
+   }
+]
