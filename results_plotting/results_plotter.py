@@ -12,11 +12,18 @@ default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 custom_colors = start_colors + [c for c in default_colors if c not in start_colors]
 plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors)
 
-
-
 PROJECT_NAME = 'TNDP-RL'
 REQ_SEEDS = 5 # to control if a model was not run for sufficient seeds
 api = wandb.Api()
+
+def highlight_cells(cells, ax, **kwargs):
+    """Highlights a cell in a grid plot. https://stackoverflow.com/questions/56654952/how-to-mark-cells-in-matplotlib-pyplot-imshow-drawing-cell-borders
+    """
+    for cell in cells:
+        (y, x) = cell
+        rect = plt.Rectangle((x-.5, y-.5), 1, 1, fill=False, linewidth=2, **kwargs)
+        ax.add_patch(rect)
+    return rect
 
 def read_json(file_path):
     with open(file_path, 'r') as file:
@@ -120,7 +127,7 @@ def load_all_results_from_wadb(all_objectives, env_name=None):
         
     return all_results, avg_reward_over_time
 
-xian_results, xian_avg_rw_over_time = load_all_results_from_wadb(read_json('./result_ids_xian.txt'), 'Xian')
+# xian_results, xian_avg_rw_over_time = load_all_results_from_wadb(read_json('./result_ids_xian.txt'), 'Xian')
 ams_results, ams_avg_rw_over_time = load_all_results_from_wadb(read_json('./result_ids_ams.txt'), 'Amsterdam')
 # %%
 # Calculate mean and confidence interval (CI)
@@ -174,11 +181,11 @@ wandb_to_local_mapper = [
         "environment": "xian",
         "reward_type": "max_efficiency",
         "mapping": {
-            'eng3ru2n': 'xian_20241003_11_05_54.565620',
-            'fgor0rft': 'xian_20241003_11_06_57.001302',
-            'hxqtppx7': 'xian_20241002_21_32_09.662719',
-            'hv9p3c2u': 'xian_20241002_21_31_53.751992',
-            'j0ejk07m': 'xian_20241003_11_10_45.833755',
+            'y1s2ebq8': 'xian_20241003_11_05_54.565620',
+            '75h2klzp': 'xian_20241003_11_06_57.001302',
+            'p89ny6o8': 'xian_20241002_21_32_09.662719',
+            'ma9yhy1o': 'xian_20241002_21_31_53.751992',
+            '2a5aes6q': 'xian_20241003_11_10_45.833755',
         }
     },
     {
@@ -281,5 +288,95 @@ for ax in axs:
 
 plt.tight_layout()
 plt.show()
+
+# %%
+
+import mo_gymnasium as mo_gym
+from motndp.city import City
+from motndp.constraints import MetroConstraints
+from pathlib import Path
+from gymnasium.envs.registration import register
+import matplotlib.patches as mpatches
+
+register(
+    id="motndp_xian-v0",
+    entry_point="motndp.motndp:MOTNDP",
+)
+
+register(
+    id="motndp_amsterdam-v0",
+    entry_point="motndp.motndp:MOTNDP",
+)
+
+xian_city = City(Path('../envs/mo-tndp/cities/xian'), groups_file='price_groups_5.txt', ignore_existing_lines=False)   
+xian_env = mo_gym.make('motndp_xian-v0', city=xian_city, constraints=MetroConstraints(xian_city), nr_stations=0, od_type='abs', chained_reward=True)
+
+ams_city = City(Path('../envs/mo-tndp/cities/amsterdam'), groups_file='price_groups_5.txt', ignore_existing_lines=False)   
+ams_env = mo_gym.make('motndp_amsterdam-v0', city=ams_city, constraints=MetroConstraints(ams_city), nr_stations=0, od_type='abs', chained_reward=True)
+
+#%%
+cp = ["#e60049", "#0bb4ff", "#50e991", "#e6d800", "#9b19f5", "#ffa300", "#dc0ab4", "#b3d4ff", "#00bfa0"]
+markers = ["o", "s", "^", "D", "v"]
+LINEWIDTH = 5
+def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend_loc='lower right'):
+    fig, ax = plt.subplots(figsize=(8, 8))
+    # ax.imshow(env.city.agg_od_mx())
+    im = ax.imshow(env.city.grid_groups, alpha=0.5)
+    
+    labels = ['1st quintile', '2nd quintile', '3rd quintile', '4th quintile', '5th quintile']
+    values = (np.unique(env.city.grid_groups[~np.isnan(env.city.grid_groups)]))
+    colors = [ im.cmap(im.norm(value)) for value in values]
+    patches = [ mpatches.Patch(color=colors[i], label=labels[i] ) for i in range(len(labels)) ]
+    ax.legend(handles=patches, loc=grp_legend_loc, prop={'size': 14})
+
+    
+    # Plot existing lines
+    for i, l in enumerate(env.city.existing_lines):
+        station_locs = env.city.vector_to_grid(l)
+        ax.plot(station_locs[:, 1], station_locs[:, 0], '--', color='#363232', label='Existing lines' if i == 0 else None, linewidth=4)
+
+    color_index = 0
+    for run_info in runs_to_plot_lines:
+        if run_info["environment"] == environment_name:
+            for reward_type, run_id in run_info["runs"].items():
+                run = api.run(f"{PROJECT_NAME}/{run_id}")
+                run.file(f"eval/{run_id}-average-generated-line.npy").download(replace=True)
+                line = np.load(f"eval/{run_id}-average-generated-line.npy")
+                
+                ax.plot(line[:, 1], line[:, 0], f'{markers[color_index]}-', color=cp[color_index % len(cp)], label=f'{reward_type}', linewidth=LINEWIDTH, markersize=10)
+                color_index += 1
+
+    fig.suptitle(f'Average Generated lines - {environment_name}')
+    fig.legend(loc='lower center', ncol=3, bbox_to_anchor=(0.5, -0.05))
+
+
+runs_to_plot_lines = [
+    {
+        "environment": "Xian",
+        "grid_y_size": 29,
+        "runs": {
+            "Max Efficiency": "iay1mvek",
+            "GGI(2)": "v4txrdje",
+            "GGI(4)": "l014wil7",
+            "Rawls": "aprwjpef",
+        }
+    },
+    {
+        "environment": "Amsterdam",
+        "grid_y_size": 47,
+        "runs": {
+            "Max Efficiency": "ots8htds",
+            "GGI(2)": "quimcanf",
+            "GGI(4)": "kzmkqh42",
+            "Rawls": "rtvw0hds",
+        }
+    }
+]
+# Plotting for Xian environment
+plot_environment_lines(runs_to_plot_lines, "Xian", xian_env)
+
+# Plotting for Amsterdam environment
+plot_environment_lines(runs_to_plot_lines, "Amsterdam", ams_env, "lower left")  # Assuming amsterdam_env is defined elsewhere
+            
 
 # %%
