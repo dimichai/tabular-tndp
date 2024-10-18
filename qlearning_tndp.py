@@ -535,10 +535,23 @@ class QLearningTNDP:
             wandb.log({"Average-Test-Reward": total_rewards/test_episodes})
             plt.close(fig)
             
+            # Log the sation_locs of the created line
+            average_generated_line = Path(f"./eval/{wandb.run.id}-average-generated-line.npy")
+            np.save(average_generated_line, station_locs)
+            wandb.save(average_generated_line.as_posix())
+            
+            # Log satisfied ODs by group 
+            avg_total_satisfied_ods_by_group = total_satisfied_ods_by_group / test_episodes
+            
+            avg_total_satisfied_ods_by_group_path = Path(f"./eval/{wandb.run.id}-average-satisfied-ods-by-group.npy")
+            np.save(avg_total_satisfied_ods_by_group_path, avg_total_satisfied_ods_by_group)
+            wandb.save(avg_total_satisfied_ods_by_group_path.as_posix())
+            
+            
             if self.nr_groups > 1:
                 # Plot a bar plot of satisfied ODs by group
                 fig, ax = plt.subplots(figsize=(5, 5))
-                ax.bar(np.arange(self.nr_groups), total_satisfied_ods_by_group / test_episodes)
+                ax.bar(np.arange(self.nr_groups), avg_total_satisfied_ods_by_group)
                 ax.set_xlabel('Group')
                 ax.set_ylabel('Satisfied ODs')
                 ax.set_title('Satisfied ODs by Group')
