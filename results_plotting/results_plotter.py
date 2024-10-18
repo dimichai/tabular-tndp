@@ -317,6 +317,8 @@ ams_env = mo_gym.make('motndp_amsterdam-v0', city=ams_city, constraints=MetroCon
 #%%
 cp = ["#e60049", "#0bb4ff", "#50e991", "#e6d800", "#9b19f5", "#ffa300", "#dc0ab4", "#b3d4ff", "#00bfa0"]
 markers = ["o", "s", "^", "D", "v"]
+hatches = ['', '/', '-',  'o', '+', 'x', 'o', 'O', '.', '*']
+
 LINEWIDTH = 5
 def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend_loc='lower right'):
     fig, ax = plt.subplots(figsize=(8, 8))
@@ -335,16 +337,33 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
         station_locs = env.city.vector_to_grid(l)
         ax.plot(station_locs[:, 1], station_locs[:, 0], '--', color='#363232', label='Existing lines' if i == 0 else None, linewidth=4)
 
-    color_index = 0
+    style_index = 0
+    group_names = ('1st quintile', '2nd', '3rd', '4th', '5th')
     for run_info in runs_to_plot_lines:
         if run_info["environment"] == environment_name:
+            barplot, barplot_ax = plt.subplots(figsize=(12, 12))
             for reward_type, run_id in run_info["runs"].items():
                 run = api.run(f"{PROJECT_NAME}/{run_id}")
                 run.file(f"eval/{run_id}-average-generated-line.npy").download(replace=True)
                 line = np.load(f"eval/{run_id}-average-generated-line.npy")
+                ax.plot(line[:, 1], line[:, 0], f'{markers[style_index]}-', color=cp[style_index % len(cp)], label=f'{reward_type}', linewidth=LINEWIDTH, markersize=10)
                 
-                ax.plot(line[:, 1], line[:, 0], f'{markers[color_index]}-', color=cp[color_index % len(cp)], label=f'{reward_type}', linewidth=LINEWIDTH, markersize=10)
-                color_index += 1
+                width = 0.2  # Adjusted width for space between bars
+                ind = np.arange(len(group_names))
+                # Plot the group satisfied OD flows in a bar chart with space between bars
+                run.file(f"eval/{run_id}-average-satisfied-ods-by-group.npy").download(replace=True)
+                sat_group_ods = np.load(f"eval/{run_id}-average-satisfied-ods-by-group.npy")
+                
+                barplot_ax.bar(ind + style_index * width, sat_group_ods, width, label=reward_type, color=cp[style_index], hatch=hatches[style_index])
+                style_index += 1
+                
+    barplot_ax.legend()
+    barplot_ax.set_xlabel('House Price Quintiles', fontsize=32)
+    barplot_ax.set_ylabel('Satisfied OD', fontsize=32)
+    
+    barplot_ax.set_title(f"Benefits Distribution among Groups - {environment_name}", fontsize=32)
+    barplot_ax.set_xticks(ind + width * 3)
+    barplot_ax.set_xticklabels(group_names)
 
     fig.suptitle(f'Average Generated lines - {environment_name}')
     fig.legend(loc='lower center', ncol=3, bbox_to_anchor=(0.5, -0.05))
@@ -376,7 +395,7 @@ runs_to_plot_lines = [
 plot_environment_lines(runs_to_plot_lines, "Xian", xian_env)
 
 # Plotting for Amsterdam environment
-plot_environment_lines(runs_to_plot_lines, "Amsterdam", ams_env, "lower left")  # Assuming amsterdam_env is defined elsewhere
+# plot_environment_lines(runs_to_plot_lines, "Amsterdam", ams_env, "lower left")  # Assuming amsterdam_env is defined elsewhere
             
 
 # %%
