@@ -319,62 +319,66 @@ cp = ["#e60049", "#0bb4ff", "#50e991", "#e6d800", "#9b19f5", "#ffa300", "#dc0ab4
 markers = ["o", "s", "^", "D", "v"]
 hatches = ['', '/', '-',  'o', '+', 'x', 'o', 'O', '.', '*']
 
-LINEWIDTH = 5
-def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend_loc='lower right'):
-    fig, ax = plt.subplots(figsize=(8, 8))
-    # ax.imshow(env.city.agg_od_mx())
-    im = ax.imshow(env.city.grid_groups, alpha=0.5)
+LINEWIDTH = 8
+MARKERSIZE = 15
+def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend_loc='lower right', sat_od_type='pct'):
+    fig, axs = plt.subplots(1, 2, figsize=(20, 10))  
+    map_ax = axs[0]
+    barplot_ax = axs[1]
+    
+    # Plotting the map
+    im = map_ax.imshow(env.city.grid_groups, alpha=0.5)
     
     labels = ['1st quintile', '2nd quintile', '3rd quintile', '4th quintile', '5th quintile']
     values = (np.unique(env.city.grid_groups[~np.isnan(env.city.grid_groups)]))
     colors = [ im.cmap(im.norm(value)) for value in values]
     patches = [ mpatches.Patch(color=colors[i], label=labels[i] ) for i in range(len(labels)) ]
-    ax.legend(handles=patches, loc=grp_legend_loc, prop={'size': 14})
+    map_ax.legend(handles=patches, loc=grp_legend_loc, prop={'size': 14})
 
     
     # Plot existing lines
     for i, l in enumerate(env.city.existing_lines):
         station_locs = env.city.vector_to_grid(l)
-        ax.plot(station_locs[:, 1], station_locs[:, 0], '--', color='#363232', label='Existing lines' if i == 0 else None, linewidth=4)
+        map_ax.plot(station_locs[:, 1], station_locs[:, 0], '--', color='#363232', label='Existing lines' if i == 0 else None, linewidth=4)
 
     style_index = 0
     group_names = ('1st quintile', '2nd', '3rd', '4th', '5th')
     for run_info in runs_to_plot_lines:
         if run_info["environment"] == environment_name:
-            barplot, barplot_ax = plt.subplots(figsize=(12, 12))
             for reward_type, run_id in run_info["runs"].items():
                 run = api.run(f"{PROJECT_NAME}/{run_id}")
                 run.file(f"eval/{run_id}-average-generated-line.npy").download(replace=True)
                 line = np.load(f"eval/{run_id}-average-generated-line.npy")
-                ax.plot(line[:, 1], line[:, 0], f'{markers[style_index]}-', color=cp[style_index % len(cp)], label=f'{reward_type}', linewidth=LINEWIDTH, markersize=10)
+                map_ax.plot(line[:, 1], line[:, 0], f'{markers[style_index]}-', color=cp[style_index % len(cp)], label=f'{reward_type}', linewidth=LINEWIDTH, markersize=MARKERSIZE)
                 
-                width = 0.2  # Adjusted width for space between bars
+                width = 0.2  
                 ind = np.arange(len(group_names))
                 # Plot the group satisfied OD flows in a bar chart with space between bars
                 run.file(f"eval/{run_id}-average-satisfied-ods-by-group.npy").download(replace=True)
                 sat_group_ods = np.load(f"eval/{run_id}-average-satisfied-ods-by-group.npy")
                 
+                if sat_od_type == 'pct':
+                    sat_group_ods = sat_group_ods / env.city.group_od_sum * 100
+                
                 barplot_ax.bar(ind + style_index * width, sat_group_ods, width, label=reward_type, color=cp[style_index], hatch=hatches[style_index])
                 style_index += 1
                 
-    barplot_ax.legend()
-    barplot_ax.set_xlabel('House Price Quintiles', fontsize=32)
-    barplot_ax.set_ylabel('Satisfied OD', fontsize=32)
+    barplot_ax.legend(loc='upper left', fontsize=16) 
+    # barplot_ax.set_xlabel('House Price Quintiles', fontsize=16)
+    barplot_ax.set_ylabel('Satisfied OD %', fontsize=18)
     
-    barplot_ax.set_title(f"Benefits Distribution among Groups - {environment_name}", fontsize=32)
-    barplot_ax.set_xticks(ind + width * 3)
+    barplot_ax.set_xticks(ind + width * 2)
     barplot_ax.set_xticklabels(group_names)
 
-    fig.suptitle(f'Average Generated lines - {environment_name}')
-    fig.legend(loc='lower center', ncol=3, bbox_to_anchor=(0.5, -0.05))
-
+    fig.suptitle(f'Generated lines and Benefits Distribution - {environment_name}', fontsize=38, y=1.05)
+    fig.tight_layout()
 
 runs_to_plot_lines = [
     {
         "environment": "Xian",
         "grid_y_size": 29,
         "runs": {
-            "Max Efficiency": "iay1mvek",
+            "Max Efficiency": "mub6vtfm", # this replaces iay1mvek, but has group distro (groups = 5)
             "GGI(2)": "v4txrdje",
             "GGI(4)": "l014wil7",
             "Rawls": "aprwjpef",
@@ -384,7 +388,7 @@ runs_to_plot_lines = [
         "environment": "Amsterdam",
         "grid_y_size": 47,
         "runs": {
-            "Max Efficiency": "ots8htds",
+            "Max Efficiency": "986jke14", # this replaces ots8htds, but has group distro (groups = 5)
             "GGI(2)": "quimcanf",
             "GGI(4)": "kzmkqh42",
             "Rawls": "rtvw0hds",
@@ -395,7 +399,6 @@ runs_to_plot_lines = [
 plot_environment_lines(runs_to_plot_lines, "Xian", xian_env)
 
 # Plotting for Amsterdam environment
-# plot_environment_lines(runs_to_plot_lines, "Amsterdam", ams_env, "lower left")  # Assuming amsterdam_env is defined elsewhere
-            
+plot_environment_lines(runs_to_plot_lines, "Amsterdam", ams_env, "lower left")  # Assuming amsterdam_env is defined elsewhere
 
 # %%
