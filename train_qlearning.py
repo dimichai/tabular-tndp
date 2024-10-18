@@ -34,7 +34,10 @@ def main(args):
 
         run = api.run(f"TNDP-RL/{args.evaluate_model}")
         run.file(f"q_tables/{args.evaluate_model}.npy").download(replace=True)
-        run.file(f"q_tables/{args.evaluate_model}_qstart.npy").download(replace=True)
+        try:
+            run.file(f"q_tables/{args.evaluate_model}_qstart.npy").download(replace=True)
+        except:
+            print("No Q_start found on WANDB")
         
         import json
         run_config = json.loads(run.json_config)
@@ -54,7 +57,11 @@ def main(args):
         
         # Load the Q-table  
         Q = np.load(f"q_tables/{args.evaluate_model}.npy")
-        Q_start = np.load(f"q_tables/{args.evaluate_model}_qstart.npy")
+        try:
+            Q_start = np.load(f"q_tables/{args.evaluate_model}_qstart.npy")
+        except:
+            Q_start = None
+            print(f"SOS NO Q_Start Loaded -- Evaluation relies on --starting_loc_x={args.starting_loc_x} and --starting_loc_y={args.starting_loc_y}")
         agent = QLearningTNDP(
             env,
             alpha=args.alpha,
@@ -154,6 +161,7 @@ if __name__ == "__main__":
     random.seed(args.seed)
     
     Path("./q_tables").mkdir(parents=True, exist_ok=True)
+    Path("./eval").mkdir(parents=True, exist_ok=True)
     
     args.project_name = "TNDP-RL"
 
@@ -187,48 +195,6 @@ if __name__ == "__main__":
         args.groups_file = f"price_groups_{args.nr_groups}.txt"
         args.ignore_existing_lines = args.ignore_existing_lines
         args.experiment_name = "Q-Learning-Xian"
-        
-        # Violet
-        # args.policy = [0, 0, 1, 2, 1, 1, 2, 2, 2, 1, 1, 0, 0, 1, 0, 1, 2, 2, 2, 2, 1, 0, 1, 1, 0, 0, 1, 2, 2, 2, 2, 1, 1]
-        # args.starting_loc_x = 25
-        # args.starting_loc_y = 3
-        # args.nr_stations = 34
-        
-        # Blue
-        # args.policy = [0, 0, 0, 0, 1, 2, 1, 1, 2, 2, 1, 2, 1, 0, 0, 1, 0, 1, 2, 2, 2, 2, 1, 1, 0, 1, 2, 2, 2, 1, 1, 0, 1, 1]
-        # args.starting_loc_x = 27
-        # args.starting_loc_y = 3
-        # args.nr_stations = 35
-        
-        # Mine best
-        # args.policy = [2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 2, 0, 0, 2, 2, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 0, 0, 2, 0, 2, 2, 2, 2, 2, 1, 1, 1]
-        # args.starting_loc_x = 28
-        # args.starting_loc_y = 1
-        # args.nr_stations = 45
-        
-        # xian_20220811_09_05_47.678390
-        # args.policy = [5, 5, 4, 6, 6, 6, 6, 6, 6, 4, 6, 4, 4, 6, 6, 6, 6, 6, 6, 4, 6, 6, 4, 6, 6, 6, 6, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 6, 6, 6, 6, 6]
-        # args.starting_loc_x = 7
-        # args.starting_loc_y = 28
-        # args.nr_stations = 47
-        
-        # xian_20220811_22_34_44.718434
-        # args.policy = [1, 0, 2, 0, 0, 2, 0, 2, 2, 0, 0, 2, 2, 2, 2, 0, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        # args.starting_loc_x = 24
-        # args.starting_loc_y = 3
-        # args.nr_stations = 49
-        
-        # xian_20220812_09_42_57.652815
-        # args.policy = [5, 5, 5, 6, 6, 6, 6, 6, 4, 6, 4, 4, 6, 6, 6, 6, 6, 6, 4, 4, 4, 6, 4, 6, 6, 6, 6, 4, 4, 6, 6, 4, 6, 4, 4, 4, 4, 4, 4, 4, 4, 6, 6, 6, 6]
-        # args.starting_loc_x = 7
-        # args.starting_loc_y = 28
-        # args.nr_stations = 46
-        
-        # args.policy = [6, 6, 6, 6, 4, 4, 4, 4, 4, 6, 4, 4, 6, 6, 6, 6, 6, 6, 4, 6, 6, 6, 4, 4, 4, 4, 4, 6, 6, 6, 4, 5, 4, 5, 4, 4, 4, 4, 4, 6, 6, 6, 6, 6]
-        # args.starting_loc_x = 6
-        # args.starting_loc_y = 24
-        # args.nr_stations = 45
-        
 
     if args.starting_loc_x is not None and args.starting_loc_y is not None:
         args.starting_loc = (args.starting_loc_x, args.starting_loc_y)
