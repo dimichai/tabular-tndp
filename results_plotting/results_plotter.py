@@ -340,6 +340,8 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
     for i, l in enumerate(env.city.existing_lines):
         station_locs = env.city.vector_to_grid(l)
         map_ax.plot(station_locs[:, 1], station_locs[:, 0], '--', color='#363232', label='Existing lines' if i == 0 else None, linewidth=4)
+        
+    map_ax.legend(labels=['Existing lines'], loc=grp_legend_loc, prop={'size': 14})
 
     style_index = 0
     group_names = ('1st quintile', '2nd', '3rd', '4th', '5th')
