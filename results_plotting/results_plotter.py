@@ -362,11 +362,10 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
                 if sat_od_type == 'pct':
                     sat_group_ods = sat_group_ods / env.city.group_od_sum * 100
                 
-                barplot_ax.bar(ind + style_index * width, sat_group_ods, width, label=reward_type, color=cp[style_index], hatch=hatches[style_index])
+                barplot_ax.bar(ind + style_index * width, sat_group_ods, width, color=cp[style_index], hatch=hatches[style_index])
                 style_index += 1
                 
-    barplot_ax.legend(loc='upper left', fontsize=16) 
-    # barplot_ax.set_xlabel('House Price Quintiles', fontsize=16)
+    # barplot_ax.legend(loc='upper left', fontsize=16) 
     barplot_ax.set_ylabel('Satisfied OD %', fontsize=18)
     
     barplot_ax.set_xticks(ind + width * 2)
@@ -374,6 +373,9 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
 
     fig.suptitle(f'Generated lines and Benefits Distribution - {environment_name}', fontsize=38, y=1.05)
     fig.tight_layout()
+    
+    fig.legend(loc='lower center', ncol=len(runs_to_plot_lines[0]['runs']) + 1, fontsize=14, bbox_to_anchor=(0.5, -0.05))
+
 
 runs_to_plot_lines = [
     {
