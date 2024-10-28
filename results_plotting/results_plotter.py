@@ -127,7 +127,7 @@ def load_all_results_from_wadb(all_objectives, env_name=None):
         
     return all_results, avg_reward_over_time
 
-# xian_results, xian_avg_rw_over_time = load_all_results_from_wadb(read_json('./result_ids_xian.txt'), 'Xian')
+xian_results, xian_avg_rw_over_time = load_all_results_from_wadb(read_json('./result_ids_xian.txt'), 'Xian')
 ams_results, ams_avg_rw_over_time = load_all_results_from_wadb(read_json('./result_ids_ams.txt'), 'Amsterdam')
 # %%
 # Calculate mean and confidence interval (CI)
@@ -183,7 +183,7 @@ wandb_to_local_mapper = [
         "mapping": {
             'y1s2ebq8': 'xian_20241003_11_05_54.565620',
             '75h2klzp': 'xian_20241003_11_06_57.001302',
-            'p89ny6o8': 'xian_20241002_21_32_09.662719',
+            'fmyrscrf': 'xian_20241017_00_03_25.938628',
             'ma9yhy1o': 'xian_20241002_21_31_53.751992',
             '2a5aes6q': 'xian_20241003_11_10_45.833755',
         }
@@ -318,6 +318,7 @@ ams_env = mo_gym.make('motndp_amsterdam-v0', city=ams_city, constraints=MetroCon
 cp = ["#e60049", "#0bb4ff", "#50e991", "#e6d800", "#9b19f5", "#ffa300", "#dc0ab4", "#b3d4ff", "#00bfa0"]
 markers = ["o", "s", "^", "D", "v"]
 hatches = ['', '/', '-',  'o', '+', 'x', 'o', 'O', '.', '*']
+plt.rcParams.update({'font.size': 28})
 
 LINEWIDTH = 8
 MARKERSIZE = 15
@@ -333,7 +334,7 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
     values = (np.unique(env.city.grid_groups[~np.isnan(env.city.grid_groups)]))
     colors = [ im.cmap(im.norm(value)) for value in values]
     patches = [ mpatches.Patch(color=colors[i], label=labels[i] ) for i in range(len(labels)) ]
-    map_ax.legend(handles=patches, loc=grp_legend_loc, prop={'size': 14})
+    map_ax.legend(handles=patches, loc=grp_legend_loc, prop={'size': 16})
 
     
     # Plot existing lines
@@ -341,7 +342,7 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
         station_locs = env.city.vector_to_grid(l)
         map_ax.plot(station_locs[:, 1], station_locs[:, 0], '--', color='#363232', label='Existing lines' if i == 0 else None, linewidth=4)
         
-    map_ax.legend(labels=['Existing lines'], loc=grp_legend_loc, prop={'size': 14})
+    # map_ax.legend(labels=['Existing lines'], loc=grp_legend_loc, prop={'size': 22})
 
     style_index = 0
     group_names = ('1st quintile', '2nd', '3rd', '4th', '5th')
@@ -371,10 +372,10 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
     barplot_ax.set_xticks(ind + width * 2)
     barplot_ax.set_xticklabels(group_names)
 
-    fig.suptitle(f'Generated lines and Benefits Distribution - {environment_name}', fontsize=38, y=1.05)
+    # fig.suptitle(f'Generated lines and Benefits Distribution - {environment_name}', fontsize=38, y=1.05)
     fig.tight_layout()
     
-    fig.legend(loc='lower center', ncol=len(runs_to_plot_lines[0]['runs']) + 1, fontsize=14, bbox_to_anchor=(0.5, -0.05))
+    fig.legend(loc='lower center', ncol=len(runs_to_plot_lines[0]['runs']) + 1, fontsize=28, bbox_to_anchor=(0.5, -0.05))
 
 
 runs_to_plot_lines = [
