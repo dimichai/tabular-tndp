@@ -105,7 +105,7 @@ class QLearningTNDP:
         """Get configuration of QLearning."""
         return {
             "env_id": self.env_id,
-            "od_type": self.env.od_type,
+            "od_type": self.env.unwrapped.od_type,
             "alpha": self.alpha,
             "gamma": self.gamma,
             "exploration_type": self.exploration_type,
@@ -121,8 +121,8 @@ class QLearningTNDP:
             "nr_groups": self.nr_groups,
             "seed": self.seed,
             "policy": self.policy,
-            "chained_reward": self.env.chained_reward,
-            "ignore_existing_lines": self.env.city.ignore_existing_lines,
+            "chained_reward": self.env.unwrapped.chained_reward,
+            "ignore_existing_lines": self.env.unwrapped.city.ignore_existing_lines,
             "ucb_c_qstart": self.ucb_c_qstart,
             "ucb_c_q": self.ucb_c_q,
             "update_method": self.update_method,
@@ -146,7 +146,7 @@ class QLearningTNDP:
             grid_x_max (int): nr of lines in the grid
             grid_y_mask (int): nr of columns in the grid
         """
-        data = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
+        data = np.zeros((self.env.unwrapped.city.grid_x_size, self.env.unwrapped.city.grid_y_size))
 
         for line in lines:
             # line_g = city.vector_to_grid(line)
@@ -216,10 +216,10 @@ class QLearningTNDP:
         wandb.config['reward_type'] = reward_type
         
         if self.exploration_type != 'ucb':
-            self.Q_start = np.full((self.env.city.grid_x_size, self.env.city.grid_y_size), self.q_start_initial_value, dtype=np.float64)
+            self.Q_start = np.full((self.env.unwrapped.city.grid_x_size, self.env.unwrapped.city.grid_y_size), self.q_start_initial_value, dtype=np.float64)
             self.Q = np.full((self.env.observation_space.n, self.env.action_space.n), self.q_initial_value, dtype=np.float64)
         else:
-            self.Q_start = np.random.random((self.env.city.grid_x_size, self.env.city.grid_y_size))
+            self.Q_start = np.random.random((self.env.unwrapped.city.grid_x_size, self.env.unwrapped.city.grid_y_size))
             self.Q = np.random.random((self.env.observation_space.n, self.env.action_space.n))
             action_counts = np.zeros((self.env.observation_space.n, self.env.action_space.n))
         
@@ -227,9 +227,9 @@ class QLearningTNDP:
         best_episode_reward = 0
         best_episode_cells = []
         # Frequency of starting locations in the grid
-        starting_loc_freq = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
-        starting_loc_avg_reward = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
-        state_visit_freq = np.zeros((self.env.city.grid_x_size, self.env.city.grid_y_size))
+        starting_loc_freq = np.zeros((self.env.unwrapped.city.grid_x_size, self.env.unwrapped.city.grid_y_size))
+        starting_loc_avg_reward = np.zeros((self.env.unwrapped.city.grid_x_size, self.env.unwrapped.city.grid_y_size))
+        state_visit_freq = np.zeros((self.env.unwrapped.city.grid_x_size, self.env.unwrapped.city.grid_y_size))
         epsilon = self.initial_epsilon
         
         last_50_rewards = deque(maxlen=50)  # deque automatically removes oldest entries when full
@@ -259,7 +259,7 @@ class QLearningTNDP:
                         loc = np.unravel_index(self.Q_start.argmax(), self.Q_start.shape)
                     # explore
                     else:
-                        loc = (start_loc_rng.randint(0, self.env.city.grid_x_size-1), start_loc_rng.randint(0, self.env.city.grid_y_size-1))
+                        loc = (start_loc_rng.randint(0, self.env.unwrapped.city.grid_x_size-1), start_loc_rng.randint(0, self.env.unwrapped.city.grid_y_size-1))
                 elif self.exploration_type == 'ucb':
                     # Set the starting loc via UCB policy (we use episode as the time step because this action is taken only at the start of the episode)
                     ucb_values = self.Q_start + self.ucb_c_qstart * np.sqrt(np.log(episode + 1) / (starting_loc_freq + 1))
@@ -270,16 +270,16 @@ class QLearningTNDP:
             else:
                 state, info = self.env.reset(loc=loc)
 
-            actual_starting_loc = state['location'].tolist()
+            actual_starting_loc = state.tolist()
 
-            starting_loc_freq[state['location'][0].item(), state['location'][1].item()] += 1
-            state_visit_freq[state['location'][0].item(), state['location'][1].item()] += 1
+            starting_loc_freq[state[0].item(), state[1].item()] += 1
+            state_visit_freq[state[0].item(), state[1].item()] += 1
             episode_reward = 0
             episode_step = 0
             
             exploration_rng = random.Random(self.seed)
             while True:
-                state_index = self.env.city.grid_to_vector(state['location'][None, :]).item()
+                state_index = self.env.unwrapped.city.grid_to_vector(state[None, :]).item()
 
                 # follow predetermined policy (set above)
                 if self.policy:
@@ -309,11 +309,10 @@ class QLearningTNDP:
                 episode_rewards.append(reward)
                 
                 if self.update_method == 'td':
-                    new_state_gid = self.env.city.grid_to_vector(new_state['location'][None, :]).item()
+                    new_state_gid = self.env.unwrapped.city.grid_to_vector(new_state[None, :]).item()
                     self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state_index, action])
-                    # print(f"from {state['location']} to {new_state['location']} with action {action} and reward {reward} New-Q: {self.Q[state_index, action]}")
                 
-                state_visit_freq[new_state['location'][0].item(), new_state['location'][1].item()] += 1
+                state_visit_freq[new_state[0].item(), new_state[1].item()] += 1
                 episode_reward += reward
 
                 training_step += 1
@@ -378,8 +377,8 @@ class QLearningTNDP:
             
             # Log the Q-table as an image
             fig, ax = plt.subplots(figsize=(10, 5))
-            Q_actions = self.Q.argmax(axis=1).reshape(self.env.city.grid_x_size, self.env.city.grid_y_size)
-            Q_values = self.Q.max(axis=1).reshape(self.env.city.grid_x_size, self.env.city.grid_y_size)
+            Q_actions = self.Q.argmax(axis=1).reshape(self.env.unwrapped.city.grid_x_size, self.env.unwrapped.city.grid_y_size)
+            Q_values = self.Q.max(axis=1).reshape(self.env.unwrapped.city.grid_x_size, self.env.unwrapped.city.grid_y_size)
             im = ax.imshow(Q_values, label='Q values', cmap='Blues')
             markers = ['\\uparrow', '\\nearrow', '\\rightarrow', '\\searrow', '\\downarrow', '\\swarrow', '\\leftarrow', '\\nwarrow']
             for a in range(8):
@@ -447,11 +446,11 @@ class QLearningTNDP:
                 self.test(self.test_episodes, reward_type, starting_loc, policy=self.policy)
                 
             fig, ax = plt.subplots(figsize=(5, 5))
-            ax.imshow(self.env.city.agg_od_mx())
+            ax.imshow(self.env.unwrapped.city.agg_od_mx())
             
-            if not self.env.city.ignore_existing_lines:
-                for i, l in enumerate(self.env.city.existing_lines):
-                    station_locs = self.env.city.vector_to_grid(l)
+            if not self.env.unwrapped.city.ignore_existing_lines:
+                for i, l in enumerate(self.env.unwrapped.city.existing_lines):
+                    station_locs = self.env.unwrapped.city.vector_to_grid(l)
                     ax.plot(station_locs[:, 1], station_locs[:, 0], '-o', color='#A1A9FF', label='Existing lines' if i == 0 else None)
             
             best_episode_cells = np.array(best_episode_cells)
@@ -476,18 +475,18 @@ class QLearningTNDP:
         if starting_loc:
             test_starting_loc = starting_loc
         else:
-            # test_starting_loc = tuple(self.env.city.vector_to_grid(np.unravel_index(self.Q.argmax(), self.Q.shape)[0]))
+            # test_starting_loc = tuple(self.env.unwrapped.city.vector_to_grid(np.unravel_index(self.Q.argmax(), self.Q.shape)[0]))
             test_starting_loc = np.unravel_index(self.Q_start.argmax(), self.Q_start.shape)
 
         for episode in range(test_episodes):
             state, info = self.env.reset(loc=test_starting_loc)
-            locations = [state['location'].tolist()]
+            locations = [state.tolist()]
             actions = []
             episode_reward = 0
             episode_satisfied_ods_by_group = np.zeros(self.nr_groups)
             episode_step = 0
             while True:
-                state_index = self.env.city.grid_to_vector(state['location'][None, :]).item()
+                state_index = self.env.unwrapped.city.grid_to_vector(state[None, :]).item()
                 if policy is not None:
                     action = policy[episode_step]
                 else:
@@ -498,7 +497,7 @@ class QLearningTNDP:
                 
                 actions.append(action)
                 new_state, reward, done, _, info = self.env.step(action)
-                locations.append(new_state['location'].tolist())
+                locations.append(new_state.tolist())
                 episode_satisfied_ods_by_group += reward
                 episode_reward += self.calculate_reward(reward, reward_type)
                 episode_step += 1
@@ -511,11 +510,11 @@ class QLearningTNDP:
             
         if self.log:
             fig, ax = plt.subplots(figsize=(5, 5))
-            ax.imshow(self.env.city.agg_od_mx())
+            ax.imshow(self.env.unwrapped.city.agg_od_mx())
             
-            if not self.env.city.ignore_existing_lines:
-                for i, l in enumerate(self.env.city.existing_lines):
-                    station_locs = self.env.city.vector_to_grid(l)
+            if not self.env.unwrapped.city.ignore_existing_lines:
+                for i, l in enumerate(self.env.unwrapped.city.existing_lines):
+                    station_locs = self.env.unwrapped.city.vector_to_grid(l)
                     ax.plot(station_locs[:, 1], station_locs[:, 0], '-o', color='#A1A9FF', label='Existing lines' if i == 0 else None)
             
             # If the test episodes are only 1, we can plot the line directly, with connected points

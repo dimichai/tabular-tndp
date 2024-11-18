@@ -328,18 +328,18 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
     barplot_ax = axs[1]
     
     # Plotting the map
-    im = map_ax.imshow(env.city.grid_groups, alpha=0.1)
+    im = map_ax.imshow(env.unwrapped.city.grid_groups, alpha=0.1)
     
     labels = ['1st quintile', '2nd quintile', '3rd quintile', '4th quintile', '5th quintile']
-    values = (np.unique(env.city.grid_groups[~np.isnan(env.city.grid_groups)]))
+    values = (np.unique(env.unwrapped.city.grid_groups[~np.isnan(env.unwrapped.city.grid_groups)]))
     colors = [ im.cmap(im.norm(value)) for value in values]
     patches = [ mpatches.Patch(color=colors[i], label=labels[i] ) for i in range(len(labels)) ]
     map_ax.legend(handles=patches, loc=grp_legend_loc, prop={'size': 18})
 
     
     # Plot existing lines
-    for i, l in enumerate(env.city.existing_lines):
-        station_locs = env.city.vector_to_grid(l)
+    for i, l in enumerate(env.unwrapped.city.existing_lines):
+        station_locs = env.unwrapped.city.vector_to_grid(l)
         map_ax.plot(station_locs[:, 1], station_locs[:, 0], '--', color='#363232', label='Existing lines' if i == 0 else None, linewidth=5)
         
     # map_ax.legend(labels=['Existing lines'], loc=grp_legend_loc, prop={'size': 22})
@@ -362,7 +362,7 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
                 sat_group_ods = np.load(f"eval/{run_id}-average-satisfied-ods-by-group.npy")
                 
                 if sat_od_type == 'pct':
-                    sat_group_ods = sat_group_ods / env.city.group_od_sum * 100
+                    sat_group_ods = sat_group_ods / env.unwrapped.city.group_od_sum * 100
                 
                 barplot_ax.bar(ind + style_index * width, sat_group_ods, width, color=cp[style_index], hatch=hatches[style_index])
                 style_index += 1
