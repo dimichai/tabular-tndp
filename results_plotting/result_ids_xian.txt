@@ -2,7 +2,7 @@
    {
       "reward_type": "max_efficiency",
       "models": [
-         {"name": "DeepRL", "run_ids": ["y1s2ebq8", "75h2klzp", "fmyrscrf", "ma9yhy1o", "2a5aes6q"]},
+         {"name": "DeepRL", "run_ids": ["y1s2ebq8", "75h2klzp", "ziz0qbk8", "ma9yhy1o", "2a5aes6q"]},
          {"name": "TabularMNEP", "run_ids": ["iay1mvek", "ymx47ntx", "g2qh9m83", "ia4cipxv", "6yevngby"]}
       ]
    },

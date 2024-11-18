@@ -183,7 +183,7 @@ wandb_to_local_mapper = [
         "mapping": {
             'y1s2ebq8': 'xian_20241003_11_05_54.565620',
             '75h2klzp': 'xian_20241003_11_06_57.001302',
-            'fmyrscrf': 'xian_20241017_00_03_25.938628',
+            'ziz0qbk8': 'xian_20241017_00_03_25.938628',
             'ma9yhy1o': 'xian_20241002_21_31_53.751992',
             '2a5aes6q': 'xian_20241003_11_10_45.833755',
         }
@@ -320,39 +320,40 @@ markers = ["o", "s", "^", "D", "v"]
 hatches = ['', '/', '-',  'o', '+', 'x', 'o', 'O', '.', '*']
 plt.rcParams.update({'font.size': 28})
 
-LINEWIDTH = 8
+LINEWIDTH = 9
 MARKERSIZE = 15
 def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend_loc='lower right', sat_od_type='pct'):
-    fig, axs = plt.subplots(1, 2, figsize=(20, 10))  
+    fig, axs = plt.subplots(1, 2, figsize=(18, 8))  
     map_ax = axs[0]
     barplot_ax = axs[1]
     
     # Plotting the map
-    im = map_ax.imshow(env.city.grid_groups, alpha=0.5)
+    im = map_ax.imshow(env.city.grid_groups, alpha=0.1)
     
     labels = ['1st quintile', '2nd quintile', '3rd quintile', '4th quintile', '5th quintile']
     values = (np.unique(env.city.grid_groups[~np.isnan(env.city.grid_groups)]))
     colors = [ im.cmap(im.norm(value)) for value in values]
     patches = [ mpatches.Patch(color=colors[i], label=labels[i] ) for i in range(len(labels)) ]
-    map_ax.legend(handles=patches, loc=grp_legend_loc, prop={'size': 16})
+    map_ax.legend(handles=patches, loc=grp_legend_loc, prop={'size': 18})
 
     
     # Plot existing lines
     for i, l in enumerate(env.city.existing_lines):
         station_locs = env.city.vector_to_grid(l)
-        map_ax.plot(station_locs[:, 1], station_locs[:, 0], '--', color='#363232', label='Existing lines' if i == 0 else None, linewidth=4)
+        map_ax.plot(station_locs[:, 1], station_locs[:, 0], '--', color='#363232', label='Existing lines' if i == 0 else None, linewidth=5)
         
     # map_ax.legend(labels=['Existing lines'], loc=grp_legend_loc, prop={'size': 22})
 
     style_index = 0
-    group_names = ('1st quintile', '2nd', '3rd', '4th', '5th')
+    group_names = ('1st quint.', '2nd', '3rd', '4th', '5th')
     for run_info in runs_to_plot_lines:
         if run_info["environment"] == environment_name:
             for reward_type, run_id in run_info["runs"].items():
                 run = api.run(f"{PROJECT_NAME}/{run_id}")
                 run.file(f"eval/{run_id}-average-generated-line.npy").download(replace=True)
                 line = np.load(f"eval/{run_id}-average-generated-line.npy")
-                map_ax.plot(line[:, 1], line[:, 0], f'{markers[style_index]}-', color=cp[style_index % len(cp)], label=f'{reward_type}', linewidth=LINEWIDTH, markersize=MARKERSIZE)
+                # map_ax.plot(line[:, 1], line[:, 0], f'{markers[style_index]}-', color=cp[style_index % len(cp)], label=f'{reward_type}', linewidth=LINEWIDTH, markersize=MARKERSIZE)
+                map_ax.plot(line[:, 1], line[:, 0], f'-', color=cp[style_index % len(cp)], label=f'{reward_type}', linewidth=LINEWIDTH, markersize=MARKERSIZE)
                 
                 width = 0.2  
                 ind = np.arange(len(group_names))
@@ -367,7 +368,7 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
                 style_index += 1
                 
     # barplot_ax.legend(loc='upper left', fontsize=16) 
-    barplot_ax.set_ylabel('Satisfied OD %', fontsize=18)
+    barplot_ax.set_ylabel('Satisfied OD %', fontsize=32)
     
     barplot_ax.set_xticks(ind + width * 2)
     barplot_ax.set_xticklabels(group_names)
