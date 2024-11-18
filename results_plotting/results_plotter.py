@@ -339,7 +339,7 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
     
     # Plot existing lines
     for i, l in enumerate(env.unwrapped.city.existing_lines):
-        station_locs = env.unwrapped.city.vector_to_grid(l)
+        station_locs = env.unwrapped.city.index_to_grid(l)
         map_ax.plot(station_locs[:, 1], station_locs[:, 0], '--', color='#363232', label='Existing lines' if i == 0 else None, linewidth=5)
         
     # map_ax.legend(labels=['Existing lines'], loc=grp_legend_loc, prop={'size': 22})
