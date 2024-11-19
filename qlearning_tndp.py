@@ -268,16 +268,16 @@ class QLearningTNDP:
             else:
                 state, info = self.env.reset(options={'loc': (1, 4)})
 
-            actual_starting_loc = state.tolist()
+            actual_starting_loc = info['location_grid_coordinates'].tolist()
 
-            starting_loc_freq[state[0].item(), state[1].item()] += 1
-            state_visit_freq[state[0].item(), state[1].item()] += 1
+            starting_loc_freq[actual_starting_loc[0], actual_starting_loc[1]] += 1
+            state_visit_freq[actual_starting_loc[0], actual_starting_loc[1]] += 1
             episode_reward = 0
             episode_step = 0
             
             exploration_rng = random.Random(self.seed)
             while True:
-                state_index = self.env.unwrapped.city.grid_to_index(state[None, :]).item()
+                # state_index = self.env.unwrapped.city.grid_to_index(state[None, :]).item()
 
                 # follow predetermined policy (set above)
                 if self.policy:
@@ -287,30 +287,30 @@ class QLearningTNDP:
                     exp_exp_tradeoff = exploration_rng.uniform(0, 1)
                     # exploit
                     if exp_exp_tradeoff > epsilon:
-                        action = np.argmax(np.where(info['action_mask'], self.Q[state_index, :], -np.inf))
+                        action = np.argmax(np.where(info['action_mask'], self.Q[state, :], -np.inf))
                     # explore
                     else:
                         action = self.env.action_space.sample(mask=info['action_mask'])
                 elif self.exploration_type == 'ucb':
                     # UCB policy
-                    ucb_values = self.Q[state_index, :] + self.ucb_c_q * np.sqrt(np.log(training_step + 1) / (action_counts[state_index] + 1))
+                    ucb_values = self.Q[state, :] + self.ucb_c_q * np.sqrt(np.log(training_step + 1) / (action_counts[state] + 1))
                     action = np.argmax(np.where(info['action_mask'], ucb_values, -np.inf))
-                    action_counts[state_index, action] += 1
+                    action_counts[state, action] += 1
 
                 new_state, reward, done, _, info = self.env.step(action)
 
                 # Here we sum the reward to create a single-objective policy optimization
                 reward = self.calculate_reward(reward, reward_type)
                 
-                episode_states.append(state_index)
+                episode_states.append(state)
                 episode_actions.append(action)
                 episode_rewards.append(reward)
                 
                 if self.update_method == 'td':
                     new_state_gid = self.env.unwrapped.city.grid_to_index(new_state[None, :]).item()
-                    self.Q[state_index, action] = self.Q[state_index, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state_index, action])
+                    self.Q[state, action] = self.Q[state, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state, action])
                 
-                state_visit_freq[new_state[0].item(), new_state[1].item()] += 1
+                state_visit_freq[info['location_grid_coordinates'][0].item(), info['location_grid_coordinates'][0].item()] += 1
                 episode_reward += reward
 
                 training_step += 1
@@ -477,24 +477,24 @@ class QLearningTNDP:
 
         for episode in range(test_episodes):
             state, info = self.env.reset(options={'loc': test_starting_loc})
-            locations = [state.tolist()]
+            locations = [info['location_grid_coordinates'].tolist()]
             actions = []
             episode_reward = 0
             episode_satisfied_ods_by_group = np.zeros(self.nr_groups)
             episode_step = 0
             while True:
-                state_index = self.env.unwrapped.city.grid_to_index(state[None, :]).item()
+                # state_index = self.env.unwrapped.city.grid_to_index(state[None, :]).item()
                 if policy is not None:
                     action = policy[episode_step]
                 else:
                     # action = np.argmax(self.Q[state_index, :] - 10000000 * (1-info['action_mask'].astype(np.int64)))
-                    action = np.argmax(np.where(info['action_mask'], self.Q[state_index, :], -np.inf))
+                    action = np.argmax(np.where(info['action_mask'], self.Q[state, :], -np.inf))
                     
                     action = action.item()
                 
                 actions.append(action)
                 new_state, reward, done, _, info = self.env.step(action)
-                locations.append(new_state.tolist())
+                locations.append(info['location_grid_coordinates'].tolist())
                 episode_satisfied_ods_by_group += reward
                 episode_reward += self.calculate_reward(reward, reward_type)
                 episode_step += 1
