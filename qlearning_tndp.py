@@ -307,8 +307,7 @@ class QLearningTNDP:
                 episode_rewards.append(reward)
                 
                 if self.update_method == 'td':
-                    new_state_gid = self.env.unwrapped.city.grid_to_index(new_state[None, :]).item()
-                    self.Q[state, action] = self.Q[state, action] + self.alpha * (reward + self.gamma * np.max(self.Q[new_state_gid, :]) - self.Q[state, action])
+                    self.Q[state, action] = self.Q[state, action] + self.alpha * (reward + self.gamma * np.max(self.Q[state, :]) - self.Q[state, action])
                 
                 state_visit_freq[info['location_grid_coordinates'][0].item(), info['location_grid_coordinates'][0].item()] += 1
                 episode_reward += reward
