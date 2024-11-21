@@ -264,9 +264,9 @@ class QLearningTNDP:
                     loc = np.unravel_index(ucb_values.argmax(), self.Q_start.shape)
 
             if episode == 0:
-                state, info = self.env.reset(seed=self.seed, options={'loc': (1, 4)})
+                state, info = self.env.reset(seed=self.seed, options={'loc': loc})
             else:
-                state, info = self.env.reset(options={'loc': (1, 4)})
+                state, info = self.env.reset(options={'loc': loc})
 
             actual_starting_loc = info['location_grid_coordinates'].tolist()
 
