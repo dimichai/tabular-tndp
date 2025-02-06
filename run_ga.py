@@ -58,7 +58,6 @@ if __name__ == "__main__":
     parser.add_argument('--starting_loc_y', default=None, type=int)
     parser.add_argument('--nr_stations', type=int)
     parser.add_argument('--init_pop_size', default=500, type=int)
-    parser.add_argument('--max_generations', default=100, type=int)
     parser.add_argument('--mutation_rate', default=0.9, type=float)
     parser.add_argument('--crossover_rate', default=0.9, type=float)
     parser.add_argument('--generations', default=3500, type=int)
