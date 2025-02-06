@@ -216,12 +216,6 @@ class GATNDP:
         if len(child) < 3:
             return child, []
         
-        #### TODO DELETE THIS
-        # if child == [9, 14, 19, 24, 23, 22, 21, 20]:
-        # # if child == [3, 8, 9, 14, 19, 24]:
-        #     print('asdasd')    
-        ####
-        
         # Get the mutation point
         mutation_point = mutation_rng.randint(1, len(child) - 2)  # Don't mutate the first or last position
 
@@ -388,11 +382,6 @@ class GATNDP:
                 parent_picks = np.random.uniform(0, total_fitness, size=2)
                 parent1 = pop[min(np.searchsorted(cumsum_fitness, parent_picks[0]), len(pop) - 1)]
                 parent2 = pop[min(np.searchsorted(cumsum_fitness, parent_picks[1]), len(pop) - 1)]
-                
-                ##### TODO DELETE THIS
-                # if parent1[0] == [10, 5, 0, 1, 2, 3, 4] and parent2[0] == [14, 18, 17, 16, 15, 20]:
-                    # print('asdasd')
-                #####
 
                 # Crossover only if the parents have common stations in the same index
                 crossover_points = [i for i in range(min(len(parent1[0]), len(parent2[0]))) if parent1[0][i] == parent2[0][i]]
@@ -415,12 +404,7 @@ class GATNDP:
                 # Ensure max length
                 child1 = child1[:self.nr_stations]
                 child2 = child2[:self.nr_stations]
-                
-                # if child1 == [10, 5, 1, 1, 2, 3, 4]:
-                #     print('asdasd')
-                # if child2 == [10, 5, 1, 1, 2, 3, 4]:
-                #     print('asdasd')
-                
+                                
                 # For every child, remove duplicates
                 child1 = list(dict.fromkeys(child1))
                 child2 = list(dict.fromkeys(child2))
@@ -435,7 +419,7 @@ class GATNDP:
                             new_state, reward, done, _, info = self.env.step(action)
                         except:
                             valid = False
-                            print(f"{child[0]} is invalid, actions {child[1]}, from parents {parent1[0]} and {parent2[0]}")
+                            # print(f"{child[0]} is invalid, actions {child[1]}, from parents {parent1[0]} and {parent2[0]}")
                             break
                             
                         episode_reward += self.calculate_reward(reward, reward_type)
