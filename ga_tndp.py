@@ -180,24 +180,36 @@ class GATNDP:
                 direction = dir_downleft
             elif np.array_equal(dir, dir_downright):
                 direction = dir_downright
-                
-        # if len(visited_locations) > 2:
-        #     # We want to detect indirect diagonal movement, e.g. up then left, or left then up and so on.
-        #     # To do this, we check the direction of the last two steps.
-        #     two_step_dir = current_location - visited_locations[-3]
-        #     two_step_dir[two_step_dir > 0] = 1
-        #     two_step_dir[two_step_dir < 0] = -1
 
-        #     if np.array_equal(two_step_dir, dir_upleft):
-        #         direction = dir_upleft
-        #     elif np.array_equal(two_step_dir, dir_upright):
-        #         direction = dir_upright
-        #     elif np.array_equal(two_step_dir, dir_downleft):
-        #         direction = dir_downleft
-        #     elif np.array_equal(two_step_dir, dir_downright):
-        #         direction = dir_downright
-                
         return direction
+    
+    def update_action_mask_for_direction(self, action_mask, direction):
+        # up-left movement
+        if (np.array_equal(direction, dir_upleft)):
+            action_mask[[1, 2, 3, 4, 5]] = 0
+        # up-right movement
+        elif (np.array_equal(direction, dir_upright)):
+            action_mask[[3, 4, 5, 6, 7]] = 0
+        # down-left movement
+        elif (np.array_equal(direction, dir_downleft)):
+            action_mask[[0, 1, 2, 3, 7]] = 0
+        # down-right movement
+        elif (np.array_equal(direction, dir_downright)):
+            action_mask[[0, 1, 5, 6, 7]] = 0
+        # upwards movement
+        elif np.array_equal(direction, dir_up):
+            action_mask[[3, 4, 5]] = 0
+        # downwards movement
+        elif np.array_equal(direction, dir_down):
+            action_mask[[0, 1, 7]] = 0
+        # left movement
+        elif np.array_equal(direction, dir_left):
+            action_mask[[1, 2, 3]] = 0
+        # right movement
+        elif np.array_equal(direction, dir_right):
+            action_mask[[5, 6, 7]] = 0
+            
+        return action_mask
     
     
     def mutate_path(self, child, child_actions, mutation_rng):
@@ -227,31 +239,7 @@ class GATNDP:
         
         # Calculate the direction of the previous and next states, to determine the direction of the mutation
         direction = self.get_direction(next_location_grid, [self.env.unwrapped.city.index_to_grid(loc) for loc in child[:mutation_point + 1]])
-        
-        # up-left movement
-        if (np.array_equal(direction, dir_upleft)):
-            action_mask[[1, 2, 3, 4, 5]] = 0
-        # up-right movement
-        elif (np.array_equal(direction, dir_upright)):
-            action_mask[[3, 4, 5, 6, 7]] = 0
-        # down-left movement
-        elif (np.array_equal(direction, dir_downleft)):
-            action_mask[[0, 1, 2, 3, 7]] = 0
-        # down-right movement
-        elif (np.array_equal(direction, dir_downright)):
-            action_mask[[0, 1, 5, 6, 7]] = 0
-        # upwards movement
-        elif np.array_equal(direction, dir_up):
-            action_mask[[3, 4, 5]] = 0
-        # downwards movement
-        elif np.array_equal(direction, dir_down):
-            action_mask[[0, 1, 7]] = 0
-        # left movement
-        elif np.array_equal(direction, dir_left):
-            action_mask[[1, 2, 3]] = 0
-        # right movement
-        elif np.array_equal(direction, dir_right):
-            action_mask[[5, 6, 7]] = 0
+        action_mask = self.update_action_mask_for_direction(action_mask, direction)
         
         # Check what actions are possible from the previous location
         possible_next_locations = prev_location_grid + ACTION_TO_DIRECTION[action_mask.astype(bool)]
@@ -405,17 +393,16 @@ class GATNDP:
                 # if parent1[0] == [10, 5, 0, 1, 2, 3, 4] and parent2[0] == [14, 18, 17, 16, 15, 20]:
                     # print('asdasd')
                 #####
-    
-                crossover_points = list(set(parent1[0]) & set(parent2[0]))
+
+                # Crossover only if the parents have common stations in the same index
+                crossover_points = [i for i in range(min(len(parent1[0]), len(parent2[0]))) if parent1[0][i] == parent2[0][i]]
 
                 if len(crossover_points) > 0 and crossover_rng.random() < self.crossover_rate:
-                    crossover_point = random.choice(list(crossover_points))
-                    idx1 = parent1[0].index(crossover_point)
-                    idx2 = parent2[0].index(crossover_point)
-                    child1 = parent1[0][:idx1] + parent2[0][idx2:]
-                    child2 = parent2[0][:idx2] + parent1[0][idx1:]
-                    child1_actions = parent1[1][:idx1] + parent2[1][idx2:]
-                    child2_actions = parent2[1][:idx2] + parent1[1][idx1:]
+                    crossover_point = random.choice(crossover_points)
+                    child1 = parent1[0][:crossover_point] + parent2[0][crossover_point:]
+                    child2 = parent2[0][:crossover_point] + parent1[0][crossover_point:]
+                    child1_actions = parent1[1][:crossover_point] + parent2[1][crossover_point:]
+                    child2_actions = parent2[1][:crossover_point] + parent1[1][crossover_point:]
                 else:
                     child1, child2 = parent1[0], parent2[0]
                     child1_actions, child2_actions = parent1[1], parent2[1]
@@ -433,6 +420,10 @@ class GATNDP:
                 #     print('asdasd')
                 # if child2 == [10, 5, 1, 1, 2, 3, 4]:
                 #     print('asdasd')
+                
+                # For every child, remove duplicates
+                child1 = list(dict.fromkeys(child1))
+                child2 = list(dict.fromkeys(child2))
                     
                 # Evaluate the children
                 for child in [(child1, child1_actions), (child2, child2_actions)]:
@@ -444,7 +435,7 @@ class GATNDP:
                             new_state, reward, done, _, info = self.env.step(action)
                         except:
                             valid = False
-                            # print(f"{child[0]} is invalid, actions {child[1]}")
+                            print(f"{child[0]} is invalid, actions {child[1]}, from parents {parent1[0]} and {parent2[0]}")
                             break
                             
                         episode_reward += self.calculate_reward(reward, reward_type)
