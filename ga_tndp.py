@@ -212,6 +212,25 @@ class GATNDP:
         return action_mask
     
     
+    def crossover_parents(self, parent1, parent2):
+        # Crossover only if the parents have common stations in the same index
+        crossover_points = [i for i in range(min(len(parent1[0]), len(parent2[0]))) if parent1[0][i] == parent2[0][i]]
+
+        if len(crossover_points) > 0:
+            crossover_point = random.choice(crossover_points)
+            child1 = parent1[0][:crossover_point] + parent2[0][crossover_point:]
+            child2 = parent2[0][:crossover_point] + parent1[0][crossover_point:]
+            child1_actions = parent1[1][:crossover_point] + parent2[1][crossover_point:]
+            child2_actions = parent2[1][:crossover_point] + parent1[1][crossover_point:]
+        else:
+            child1 = parent1[0].copy()
+            child2 = parent2[0].copy()
+            child1_actions = parent1[1].copy()
+            child2_actions = parent2[1].copy()
+            
+        return child1, child2, child1_actions, child2_actions
+    
+    
     def mutate_path(self, child, child_actions, mutation_rng):
         if len(child) < 3:
             return child, []
@@ -382,19 +401,14 @@ class GATNDP:
                 parent_picks = np.random.uniform(0, total_fitness, size=2)
                 parent1 = pop[min(np.searchsorted(cumsum_fitness, parent_picks[0]), len(pop) - 1)]
                 parent2 = pop[min(np.searchsorted(cumsum_fitness, parent_picks[1]), len(pop) - 1)]
-
-                # Crossover only if the parents have common stations in the same index
-                crossover_points = [i for i in range(min(len(parent1[0]), len(parent2[0]))) if parent1[0][i] == parent2[0][i]]
-
-                if len(crossover_points) > 0 and crossover_rng.random() < self.crossover_rate:
-                    crossover_point = random.choice(crossover_points)
-                    child1 = parent1[0][:crossover_point] + parent2[0][crossover_point:]
-                    child2 = parent2[0][:crossover_point] + parent1[0][crossover_point:]
-                    child1_actions = parent1[1][:crossover_point] + parent2[1][crossover_point:]
-                    child2_actions = parent2[1][:crossover_point] + parent1[1][crossover_point:]
+                
+                if crossover_rng.random() < self.crossover_rate:
+                    child1, child2, child1_actions, child2_actions = self.crossover_parents(parent1, parent2)
                 else:
-                    child1, child2 = parent1[0], parent2[0]
-                    child1_actions, child2_actions = parent1[1], parent2[1]
+                    child1 = parent1[0].copy()
+                    child2 = parent2[0].copy()
+                    child1_actions = parent1[1].copy()
+                    child2_actions = parent2[1].copy()
 
                 # Mutate
                 if mutation_rng.random() < self.mutation_rate:
