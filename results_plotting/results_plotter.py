@@ -7,13 +7,21 @@ import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 18})
 # Set the color palette to start with two specific colors using matplotlib
 
-start_colors = ["#ff7f5e", "#1f77b4"]  # Blue and orange
+start_colors = ["#9365b4", "#ff7f5e", "#1f77b4"]  # Blue and orange
 default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 custom_colors = start_colors + [c for c in default_colors if c not in start_colors]
 plt.rcParams['axes.prop_cycle'] = plt.cycler(color=custom_colors)
 
-PROJECT_NAME = 'TNDP-RL'
-REQ_SEEDS = 5 # to control if a model was not run for sufficient seeds
+plt.rcParams.update({
+    'axes.titlesize': 24,
+    'axes.labelsize': 20,
+    'xtick.labelsize': 18,
+    'ytick.labelsize': 18,
+    'legend.fontsize': 20,
+})
+
+REQ_SEEDS = 10 # to control if a model was not run for sufficient seeds
+#%%
 api = wandb.Api()
 
 def highlight_cells(cells, ax, **kwargs):
@@ -84,12 +92,16 @@ def load_all_results_from_wadb(all_objectives, env_name=None):
                         print(f"WARNING - Empty run id in {model_name}")
                         continue
                     
-                    run = api.run(f"{PROJECT_NAME}/{model['run_ids'][i]}")
-
-                    results_by_reward_type[model_name]['average_test_reward'].append(run.summary['Average-Test-Reward'])
+                    project_name = "TNDP-RL" if model_name != 'GA' else "TNDP-GA"
+                    run = api.run(f"{project_name}/{model['run_ids'][i]}")
+                    
+                    if model_name != 'GA':
+                        results_by_reward_type[model_name]['average_test_reward'].append(run.summary['Average-Test-Reward'])
+                    else:
+                        results_by_reward_type[model_name]['average_test_reward'].append(run.summary['average_reward'])
 
                     if model_name != 'DeepRL':
-                        keys_to_load = ['episode', 'average_reward']
+                        keys_to_load = ['episode', 'average_reward'] if model_name != 'GA' else ['generation', 'average_reward']
                         history = []
                         for row in run.scan_history(keys=keys_to_load):
                             history.append(row)
@@ -144,8 +156,8 @@ ams_results_summary = ams_results.groupby(['reward_type', 'model', 'metric'])['v
 
 #%%
 # Plot a bar chart of xian_results_summary with error bars
-def plot_results_summary(results_summary, city_name):
-    fig, axs = plt.subplots(2, 2, figsize=(9, 6))
+def plot_results_summary(results_summary, city_name, models_to_plot):
+    fig, axs = plt.subplots(2, 2, figsize=(12.8, 8))
     axs = axs.flatten()
 
     reward_types = ['max_efficiency', 'ggi2', 'ggi4', 'rawls']
@@ -154,26 +166,29 @@ def plot_results_summary(results_summary, city_name):
     for idx, reward_type in enumerate(reward_types):
         # Filter data for the current reward type
         data = results_summary[results_summary['reward_type'] == reward_type]
-            
-        # Plot bars with error bars
-        for i, (model, group) in enumerate(data.groupby('model')):
-            axs[idx].bar(i, group['mean'], 
-                         yerr=[group['mean'] - group['ci_min'], group['ci_max'] - group['mean']], 
-                         capsize=5, label=model)
+        
+        # Plot bars with error bars in the specified order
+        for i, model in enumerate(models_to_plot):
+            model_data = data[data['model'] == model]
+            if not model_data.empty:
+                axs[idx].bar(i, model_data['mean'], 
+                             yerr=[model_data['mean'] - model_data['ci_min'], model_data['ci_max'] - model_data['mean']], 
+                             capsize=12, label=model)
         
         # Set labels and title for each subplot
-        axs[idx].set_xticks(range(len(data['model'].unique())))
-        axs[idx].set_xticklabels(data['model'].unique())
-        axs[idx].set_ylabel('Value')
-        axs[idx].set_title(f'{reward_type_names[idx]}')
+        axs[idx].set_xticks(range(len(models_to_plot)))
+        axs[idx].set_xticklabels(models_to_plot)
+        axs[idx].set_ylabel(f'{reward_type_names[idx]}')
+        # axs[idx].set_title(f'{reward_type_names[idx]}')
     
     # plt.suptitle(f'Results {city_name}')
     plt.tight_layout()
     plt.show()
 
 # Usage:
-plot_results_summary(xian_results_summary, 'Xian')
-plot_results_summary(ams_results_summary, 'Amsterdam')
+models_to_plot = ['GA', 'DeepRL', 'TabularMNEP']
+plot_results_summary(xian_results_summary, 'Xian', models_to_plot)
+plot_results_summary(ams_results_summary, 'Amsterdam', models_to_plot)
 
 #%% Plot average reward over time
 wandb_to_local_mapper = [
@@ -349,7 +364,8 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
     for run_info in runs_to_plot_lines:
         if run_info["environment"] == environment_name:
             for reward_type, run_id in run_info["runs"].items():
-                run = api.run(f"{PROJECT_NAME}/{run_id}")
+                project_name = "TNDP-RL" if reward_type != 'GA' else "TNDP-GA"
+                run = api.run(f"{project_name}/{run_id}")
                 run.file(f"eval/{run_id}-average-generated-line.npy").download(replace=True)
                 line = np.load(f"eval/{run_id}-average-generated-line.npy")
                 # map_ax.plot(line[:, 1], line[:, 0], f'{markers[style_index]}-', color=cp[style_index % len(cp)], label=f'{reward_type}', linewidth=LINEWIDTH, markersize=MARKERSIZE)
