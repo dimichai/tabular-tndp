@@ -18,6 +18,7 @@ plt.rcParams.update({
     'xtick.labelsize': 18,
     'ytick.labelsize': 18,
     'legend.fontsize': 20,
+    'font.family': 'Georgia',
 })
 
 REQ_SEEDS = 10 # to control if a model was not run for sufficient seeds
@@ -92,10 +93,16 @@ def load_all_results_from_wadb(all_objectives, env_name=None):
                         print(f"WARNING - Empty run id in {model_name}")
                         continue
                     
-                    project_name = "TNDP-RL" if model_name != 'GA' else "TNDP-GA"
+                    if model_name == 'DeepRL' or model_name == 'TabularMNEP':
+                        project_name = "TNDP-RL"
+                    elif model_name == 'GA':
+                        project_name = "TNDP-GA"
+                    elif model_name == 'GS':
+                        project_name = "TNDP-GS"
+                    
                     run = api.run(f"{project_name}/{model['run_ids'][i]}")
                     
-                    if model_name != 'GA':
+                    if model_name not in ['GA', 'GS']:
                         results_by_reward_type[model_name]['average_test_reward'].append(run.summary['Average-Test-Reward'])
                     else:
                         results_by_reward_type[model_name]['average_test_reward'].append(run.summary['average_reward'])
@@ -240,13 +247,12 @@ wandb_to_local_mapper = [
 
 result_dir = '../../fair-network-expansion/result/new'
 
-fig, axs = plt.subplots(1, 2, figsize=(16, 5))
+fig, ax = plt.subplots(figsize=(6.4, 4))
 
 reward_type = 'max_efficiency'
 reward_type_name = 'Max Efficiency'
 
 # Plotting for Xian
-ax = axs[0]
 mapper = next((m for m in wandb_to_local_mapper if m['reward_type'] == reward_type and m['environment'] == 'xian'), None)
 if mapper:
     mapping = mapper['mapping']
@@ -270,39 +276,45 @@ data = xian_avg_rw_over_time.filter(regex=f'.*{reward_type}').iloc[::128].reset_
 ax.semilogx(data.index + 1, data[f'TabularMNEP_{reward_type}'], label='TabularMNEP', linewidth=2)
 ax.fill_between(data.index + 1, data[f'TabularMNEP_{reward_type}_lower'], data[f'TabularMNEP_{reward_type}_upper'], alpha=0.3)
 
-# Plotting for Amsterdam
-ax = axs[1]
-mapper = next((m for m in wandb_to_local_mapper if m['reward_type'] == reward_type and m['environment'] == 'amsterdam'), None)
-if mapper:
-    mapping = mapper['mapping']
-    all_reward_data = []
-    for wandb_id, local_dir in mapping.items():
-        file_path = f"{result_dir}/{local_dir}/reward_actloss_criloss.txt"
-        try:
-            reward_data = np.loadtxt(file_path)
-            all_reward_data.append(reward_data[:, 0])
-        except FileNotFoundError:
-            print(f"File not found: {file_path}")
-    
-    if all_reward_data:
-        avg_reward_data = np.mean(all_reward_data, axis=0)
-        ci = 1.96 * np.std(all_reward_data, axis=0) / np.sqrt(len(all_reward_data))
-        ax.semilogx(np.arange(1, len(avg_reward_data) + 1), avg_reward_data, label="DeepRL", linewidth=2)
-        ax.fill_between(np.arange(1, len(avg_reward_data) + 1), avg_reward_data - ci, avg_reward_data + ci, alpha=0.3)
-
-data = ams_avg_rw_over_time.filter(regex=f'.*{reward_type}').iloc[::128].reset_index(drop=True)
-ax.semilogx(data.index + 1, data[f'TabularMNEP_{reward_type}'], label='TabularMNEP', linewidth=2)
-ax.fill_between(data.index + 1, data[f'TabularMNEP_{reward_type}_lower'], data[f'TabularMNEP_{reward_type}_upper'], alpha=0.3)
-
 # Set labels and title for both subplots
-for ax in axs:
-    ax.set_xlabel('Steps (x128 episodes)')
-    ax.set_ylabel('Average Reward')
-    ax.set_title(f'Average Reward Over Time - {reward_type_name}')
-    ax.legend(loc='lower right', fontsize=16)
+ax.set_xlabel('Steps (x128 episodes)')
+ax.set_ylabel('Average Reward')
+ax.set_title(f'Average Reward Over Time')
+ax.legend(loc='upper left', fontsize=16)
 
-plt.tight_layout()
-plt.show()
+# Plotting for Amsterdam
+# ax = axs[1]
+# mapper = next((m for m in wandb_to_local_mapper if m['reward_type'] == reward_type and m['environment'] == 'amsterdam'), None)
+# if mapper:
+#     mapping = mapper['mapping']
+#     all_reward_data = []
+#     for wandb_id, local_dir in mapping.items():
+#         file_path = f"{result_dir}/{local_dir}/reward_actloss_criloss.txt"
+#         try:
+#             reward_data = np.loadtxt(file_path)
+#             all_reward_data.append(reward_data[:, 0])
+#         except FileNotFoundError:
+#             print(f"File not found: {file_path}")
+    
+#     if all_reward_data:
+#         avg_reward_data = np.mean(all_reward_data, axis=0)
+#         ci = 1.96 * np.std(all_reward_data, axis=0) / np.sqrt(len(all_reward_data))
+#         ax.semilogx(np.arange(1, len(avg_reward_data) + 1), avg_reward_data, label="DeepRL", linewidth=2)
+#         ax.fill_between(np.arange(1, len(avg_reward_data) + 1), avg_reward_data - ci, avg_reward_data + ci, alpha=0.3)
+
+# data = ams_avg_rw_over_time.filter(regex=f'.*{reward_type}').iloc[::128].reset_index(drop=True)
+# ax.semilogx(data.index + 1, data[f'TabularMNEP_{reward_type}'], label='TabularMNEP', linewidth=2)
+# ax.fill_between(data.index + 1, data[f'TabularMNEP_{reward_type}_lower'], data[f'TabularMNEP_{reward_type}_upper'], alpha=0.3)
+
+# # Set labels and title for both subplots
+# for ax in axs:
+#     ax.set_xlabel('Steps (x128 episodes)')
+#     ax.set_ylabel('Average Reward')
+#     ax.set_title(f'Average Reward Over Time - {reward_type_name}')
+#     ax.legend(loc='lower right', fontsize=16)
+
+# plt.tight_layout()
+# plt.show()
 
 # %%
 
@@ -333,12 +345,21 @@ ams_env = mo_gym.make('motndp_amsterdam-v0', city=ams_city, constraints=MetroCon
 cp = ["#e60049", "#0bb4ff", "#50e991", "#e6d800", "#9b19f5", "#ffa300", "#dc0ab4", "#b3d4ff", "#00bfa0"]
 markers = ["o", "s", "^", "D", "v"]
 hatches = ['', '/', '-',  'o', '+', 'x', 'o', 'O', '.', '*']
-plt.rcParams.update({'font.size': 28})
+# plt.rcParams.update({'font.size': 28})
 
-LINEWIDTH = 9
+plt.rcParams.update({
+    'axes.titlesize': 24,
+    'axes.labelsize': 20,
+    'xtick.labelsize': 18,
+    'ytick.labelsize': 18,
+    'legend.fontsize': 20,
+    'font.family': 'Georgia',
+})
+
+LINEWIDTH = 7
 MARKERSIZE = 15
 def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend_loc='lower right', sat_od_type='pct'):
-    fig, axs = plt.subplots(1, 2, figsize=(18, 8))  
+    fig, axs = plt.subplots(1, 2, figsize=(12.8, 4))  
     map_ax = axs[0]
     barplot_ax = axs[1]
     
@@ -348,8 +369,8 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
     labels = ['1st quintile', '2nd quintile', '3rd quintile', '4th quintile', '5th quintile']
     values = (np.unique(env.unwrapped.city.grid_groups[~np.isnan(env.unwrapped.city.grid_groups)]))
     colors = [ im.cmap(im.norm(value)) for value in values]
-    patches = [ mpatches.Patch(color=colors[i], label=labels[i] ) for i in range(len(labels)) ]
-    map_ax.legend(handles=patches, loc=grp_legend_loc, prop={'size': 18})
+    # patches = [ mpatches.Patch(color=colors[i], label=labels[i] ) for i in range(len(labels)) ]
+    # map_ax.legend(handles=patches, loc=grp_legend_loc, prop={'size': 16})
 
     
     # Plot existing lines
@@ -384,7 +405,7 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
                 style_index += 1
                 
     # barplot_ax.legend(loc='upper left', fontsize=16) 
-    barplot_ax.set_ylabel('Satisfied OD %', fontsize=32)
+    barplot_ax.set_ylabel('Satisfied OD %')
     
     barplot_ax.set_xticks(ind + width * 2)
     barplot_ax.set_xticklabels(group_names)
@@ -392,7 +413,9 @@ def plot_environment_lines(runs_to_plot_lines, environment_name, env, grp_legend
     # fig.suptitle(f'Generated lines and Benefits Distribution - {environment_name}', fontsize=38, y=1.05)
     fig.tight_layout()
     
-    fig.legend(loc='lower center', ncol=len(runs_to_plot_lines[0]['runs']) + 1, fontsize=28, bbox_to_anchor=(0.5, -0.05))
+    fig.legend(loc='lower center', ncol=len(runs_to_plot_lines[0]['runs']) + 1, bbox_to_anchor=(0.5, -0.1))
+    
+    return fig
 
 
 runs_to_plot_lines = [
@@ -418,9 +441,11 @@ runs_to_plot_lines = [
     }
 ]
 # Plotting for Xian environment
-plot_environment_lines(runs_to_plot_lines, "Xian", xian_env)
+fig_xian = plot_environment_lines(runs_to_plot_lines, "Xian", xian_env)
 
 # Plotting for Amsterdam environment
-plot_environment_lines(runs_to_plot_lines, "Amsterdam", ams_env, "lower left")  # Assuming amsterdam_env is defined elsewhere
+fig_ams = plot_environment_lines(runs_to_plot_lines, "Amsterdam", ams_env, "lower left")  # Assuming amsterdam_env is defined elsewhere
+fig_xian.savefig('genlines_xian.pdf', bbox_inches='tight')
+fig_ams.savefig('genlines_ams.pdf', bbox_inches='tight')
 
 # %%
