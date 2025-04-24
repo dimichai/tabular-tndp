@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import random
 import time
 from pathlib import Path
+from codecarbon import EmissionsTracker
 
 def linearly_decaying_value(initial_value, decay_period, step, warmup_steps, final_value):
     # Got it from https://github.com/LucasAlegre/morl-baselines
@@ -211,6 +212,9 @@ class QLearningTNDP:
         return np.sum(sorted_reward * weights)
 
     def train(self, reward_type, starting_loc=None):
+        tracker = EmissionsTracker(output_dir="carbon_logs", project_name=wandb.run.id)
+        tracker.start()
+
         wandb.config['reward_type'] = reward_type
         
         if self.exploration_type != 'ucb':
@@ -360,6 +364,9 @@ class QLearningTNDP:
             #Cutting down on exploration by reducing the epsilon
             if self.exploration_type == 'egreedy':
                 epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, episode, self.epsilon_warmup_steps, self.final_epsilon)
+                
+        tracker.stop()
+            
         
         if self.log:
             # Log the final Q-table
