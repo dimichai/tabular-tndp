@@ -234,6 +234,8 @@ class QLearningTNDP:
         state_visit_freq = np.zeros((self.env.unwrapped.city.grid_x_size, self.env.unwrapped.city.grid_y_size))
         epsilon = self.initial_epsilon
         
+        logged_starting_loc_avg_reward_end_exploration = False
+        
         last_50_rewards = deque(maxlen=50)  # deque automatically removes oldest entries when full
 
         # To ensure the exploration and starting location is consistent across runs with the same seed (different states)
@@ -364,6 +366,16 @@ class QLearningTNDP:
             #Cutting down on exploration by reducing the epsilon
             if self.exploration_type == 'egreedy':
                 epsilon = linearly_decaying_value(self.initial_epsilon, self.epsilon_decay_steps, episode, self.epsilon_warmup_steps, self.final_epsilon)
+                
+                if epsilon <= self.final_epsilon and self.log and not logged_starting_loc_avg_reward_end_exploration:
+                    # Plot average reward of starting locations
+                    fig, ax = plt.subplots(figsize=(10, 5))
+                    im = ax.imshow(starting_loc_avg_reward, label='Average reward of starting locs (End of Exploration)', cmap='Blues')
+                    fig.colorbar(im)
+                    fig.suptitle('Average Reward when starting at a location (end of exploration)')
+                    wandb.log({"Avg-Reward-Starting-Locations-End-Of-Exploration-Table": wandb.Image(fig)})
+                    plt.close(fig)
+                    logged_starting_loc_avg_reward_end_exploration = True
                 
         tracker.stop()
             
