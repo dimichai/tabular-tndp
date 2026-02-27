@@ -448,4 +448,20 @@ fig_ams = plot_environment_lines(runs_to_plot_lines, "Amsterdam", ams_env, "lowe
 fig_xian.savefig('genlines_xian.pdf', bbox_inches='tight')
 fig_ams.savefig('genlines_ams.pdf', bbox_inches='tight')
 
-# %%
+# %% Combine Q-Start and Q-table tables into a single plot
+runs_to_plot = ['gxtct65s', 'vfvxgiva', '2iz9aexo', 'bbwmfluu', 'lin6e4ts']
+Q_start_combined = np.zeros((xian_env.unwrapped.city.grid_x_size, xian_env.unwrapped.city.grid_y_size))
+for run_id in runs_to_plot:
+    project_name = "TNDP-RL" if reward_type != 'GA' else "TNDP-GA"
+    run = api.run(f"{project_name}/{run_id}")
+    run.file(f"q_tables/{run_id}_qstart.npy").download(replace=True)
+    line = np.load(f"q_tables/{run_id}_qstart.npy")
+        
+    Q_start_combined += line
+    
+    
+fig, ax = plt.subplots(figsize=(10, 5))
+im = ax.imshow(Q_start_combined, cmap='Blues')
+fig.colorbar(im)
+fig.suptitle('Average Q-Start over Reward Types')
+plt.show()
