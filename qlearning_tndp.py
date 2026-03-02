@@ -270,9 +270,11 @@ class QLearningTNDP:
                     loc = np.unravel_index(ucb_values.argmax(), self.Q_start.shape)
 
             if episode == 0:
-                state, info = self.env.reset(seed=self.seed, options={'loc': loc})
+                obs, info = self.env.reset(seed=self.seed, options={'loc': loc})
+                state = info['location_grid_index']
             else:
-                state, info = self.env.reset(options={'loc': loc})
+                obs, info = self.env.reset(options={'loc': loc})
+                state = info['location_grid_index']
 
             actual_starting_loc = info['location_grid_coordinates'].tolist()
 
@@ -303,7 +305,8 @@ class QLearningTNDP:
                     action = np.argmax(np.where(info['action_mask'], ucb_values, -np.inf))
                     action_counts[state, action] += 1
 
-                new_state, reward, done, _, info = self.env.step(action)
+                new_obs, reward, done, _, info = self.env.step(action)
+                new_state = info['location_grid_index']
 
                 # Here we sum the reward to create a single-objective policy optimization
                 reward = self.calculate_reward(reward, reward_type)

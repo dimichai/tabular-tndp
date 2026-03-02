@@ -349,9 +349,11 @@ class GATNDP:
             starting_loc = (start_loc_rng.randint(0, self.env.unwrapped.city.grid_x_size-1), start_loc_rng.randint(0, self.env.unwrapped.city.grid_y_size-1))
             
             if i == 0:
-                state, info = self.env.reset(seed=self.seed, options={'loc': starting_loc})
+                obs, info = self.env.reset(seed=self.seed, options={'loc': starting_loc})
+                state = info['location_grid_index']
             else:
-                state, info = self.env.reset(options={'loc': starting_loc})
+                obs, info = self.env.reset(options={'loc': starting_loc})
+                state = info['location_grid_index']
             
             actual_starting_loc = info['location_grid_coordinates'].tolist()
             starting_loc_freq[actual_starting_loc[0], actual_starting_loc[1]] += 1
@@ -361,7 +363,8 @@ class GATNDP:
             
             while True:
                 action = self.env.action_space.sample(mask=info['action_mask'])
-                new_state, reward, done, _, info = self.env.step(action)
+                new_obs, reward, done, _, info = self.env.step(action)
+                new_state = info['location_grid_index']
                 episode_reward += self.calculate_reward(reward, reward_type)
                 
                 episode_states.append(state)
@@ -430,7 +433,8 @@ class GATNDP:
                     episode_reward = 0
                     for action in child[1]:
                         try:
-                            new_state, reward, done, _, info = self.env.step(action)
+                            new_obs, reward, done, _, info = self.env.step(action)
+                            new_state = info['location_grid_index']
                         except:
                             valid = False
                             # print(f"{child[0]} is invalid, actions {child[1]}, from parents {parent1[0]} and {parent2[0]}")

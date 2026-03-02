@@ -21,7 +21,6 @@ def main(args):
                         city=city, 
                         constraints=MetroConstraints(city),
                         nr_stations=args.nr_stations,
-                        state_representation='grid_index',
                         od_type=args.od_type,
                         chained_reward=args.chained_reward,)
 

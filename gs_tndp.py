@@ -181,7 +181,8 @@ class GreedyTNDP:
         
         starting_loc = tuple(self.env.unwrapped.city.index_to_grid(max_od_pair[0]))
 
-        state, info = self.env.reset(options={'loc': starting_loc})
+        obs, info = self.env.reset(options={'loc': starting_loc})
+        state = info['location_grid_index']
         episode_reward = 0
         visited_locations = [starting_loc]
         actions = []
@@ -203,7 +204,8 @@ class GreedyTNDP:
             if best_action is None:
                 break
 
-            state, reward, done, _, info = self.env.step(best_action)
+            obs, reward, done, _, info = self.env.step(best_action)
+            state = info['location_grid_index']
             episode_reward += self.calculate_reward(reward, reward_type)
             visited_locations.append(self.env.unwrapped.city.index_to_grid(state)[0])
             actions.append(best_action)
